@@ -1,0 +1,44 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T08:34:19.386Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 1,
+    "implemented": 1,
+    "items": [
+      {
+        "id": "REQ-15",
+        "summary": "Update the working-hour calculation logic in `frontend/src/utils/hoursCalculation.ts` to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave / full-day presence). The updated net hours formula must be: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Half-day leave entries (first half and second half) must NOT have the lunch deduction applied, as per the existing rules. Full-day leave entries continue to return 0 daily hours with no deduction.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/hoursCalculation.ts",
+          "frontend/src/components/SmartSwipeOutPrediction.tsx",
+          "frontend/src/pages/Dashboard.tsx",
+          "frontend/src/pages/Analytics.tsx",
+          "frontend/src/pages/Export.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/hoursCalculation.ts",
+          "frontend/src/components/SmartSwipeOutPrediction.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "build-template/README.md",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/components/SmartSwipeOutPrediction.tsx",
+    "frontend/src/utils/hoursCalculation.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

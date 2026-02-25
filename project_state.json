@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 5,
+  "summary": "Production-ready office attendance tracker React app with swipe-in/out logging, automatic working hour calculations (42h 30m weekly target, 7AM-7PM window), core hours enforcement (9:30AM-4PM), 30-minute lunch deduction on regular working days, breakfast bonus (+30min), leave management (full-day, half-day first/second), weekend detection and compensation, smart swipe-out predictions, daily/weekly/monthly dashboard, leave history screen, analytics with charts, CSV/Excel export, push notification reminders, email auth with cloud sync/backup/restore, and premium dark/light mode mobile-first UI.",
+  "architectural_notes": [
+    "React PWA (mobile-first) with offline-first architecture using IndexedDB/localStorage for local persistence and cloud sync",
+    "Working hours only counted between 7:00 AM–7:00 PM; swipe-in before 7AM clips to 7AM, swipe-out after 7PM clips to 7PM",
+    "Breakfast Yes = +30 min added to daily hours; core hours 9:30AM–4:00PM must be satisfied or warning shown",
+    "Leave deductions: Full-day = -8h30m target, Half-day first half = -4h30m target (swipe-in auto-set to 1PM if 12:30–1PM), Half-day second half = -4h00m target (swipe-out auto-set to 12:30PM if 12:30–1PM)",
+    "Weekend compensation: weekend hours (7AM–7PM) count toward weekly total and reduce deficit",
+    "Smart swipe-out prediction calculates required swipe-out time based on remaining weekly hours, already-logged hours, and today's breakfast selection",
+    "Email authentication with cloud sync, backup, and restore functionality",
+    "Analytics module with weekly/monthly charts, avg daily/weekly hours, highest/lowest day stats",
+    "Export feature: CSV and Excel with date, swipe-in, swipe-out, hours, breakfast, leave type columns",
+    "Push notification reminders at 10AM (swipe-in) and 6:30PM (swipe-out)"
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-implement-all-working-hour-calculation-logic-in-the-frontend-as-a-shared-utility-module-rules-1-effective-working-window-is-7-00-am-7-00-pm-clamp-swipe-in-to-07-00-if-earlier-clamp-swipe-out-to-19-00-if-later-2-raw-hours-swipeout-swipein-after-clamping-3-if-breakfastatoffice-is-true-add-30-minutes-4-full-day-leave-daily-hours-0-weekly-target-reduction-8h-30m-5-half-day-first-half-if-swipein-is-between-12-30-13-00-auto-set-to-13-00-target-reduction-4h-30m-no-lunch-deduction-6-half-day-second-half-if-swipeout-is-between-12-30-13-00-auto-set-to-12-30-target-reduction-4h-00m-no-lunch-deduction-7-default-weekly-target-42h-30m-adjusted-target-42h-30m-sum-of-leave-reductions-for-the-week-8-core-hours-9-30-am-4-00-pm-flag-violation-if-swipein-09-30-or-swipeout-16-00",
+      "title": "Implement all working-hour calculation logic in the frontend as a shared utility module. Rules: (1) Effective working window is 7:00 AM–7:00 PM; clamp swipe-in to 07:00 if earlier, clamp swipe-out to 19:00 if later. (2) Raw hours = swipeOut − swipeIn (after clamping). (3) If breakfastAtOffice is true, add 30 minutes. (4) Full-day leave → daily hours = 0, weekly target reduction = 8h 30m. (5) Half-day first half: if swipeIn is between 12:30–13:00 auto-set to 13:00, target reduction = 4h 30m, no lunch deduction. (6) Half-day second half: if swipeOut is between 12:30–13:00 auto-set to 12:30, target reduction = 4h 00m, no lunch deduction. (7) Default weekly target = 42h 30m; adjusted target = 42h 30m − sum of leave reductions for the week. (8) Core hours = 9:30 AM–4:00 PM; flag violation if swipeIn > 09:30 or swipeOut < 16:00.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-daily-entry-screen-primary-screen-on-mobile-with-1-date-picker-defaulting-to-today-2-swipe-in-time-input-with-swipe-in-now-quick-button-filling-current-time-3-swipe-out-time-input-with-swipe-out-now-quick-button-filling-current-time-4-breakfast-toggle-yes-no-5-leave-type-dropdown-no-leave-half-day-leave-first-half-half-day-leave-second-half-full-day-leave-6-save-button-that-persists-the-record-to-the-backend-7-inline-display-of-calculated-daily-hours-any-core-hours-warning-and-real-time-smart-swipe-out-prediction",
+      "title": "Build a Daily Entry screen (primary screen on mobile) with: (1) Date picker defaulting to today. (2) Swipe-in time input with 'Swipe In Now' quick button filling current time. (3) Swipe-out time input with 'Swipe Out Now' quick button filling current time. (4) Breakfast toggle (Yes/No). (5) Leave type dropdown: No Leave, Half-Day Leave – First Half, Half-Day Leave – Second Half, Full-Day Leave. (6) Save button that persists the record to the backend. (7) Inline display of calculated daily hours, any core hours warning, and real-time smart swipe-out prediction.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-smart-swipe-out-prediction-feature-after-swipe-in-is-entered-and-breakfast-selection-is-known-compute-and-display-a-remaining-hours-needed-this-week-adjusted-weekly-target-hours-already-completed-this-week-mon-today-excluding-today-s-incomplete-entry-b-required-swipe-out-time-today-swipein-remaining-hours-breakfast-bonus-if-applicable-c-display-as-you-need-xh-xxm-more-this-week-swipe-out-at-hh-mm-to-complete-your-weekly-target-update-prediction-live-when-swipe-in-or-breakfast-changes",
+      "title": "Implement the Smart Swipe-Out Prediction feature. After swipe-in is entered (and breakfast selection is known), compute and display: (a) remaining hours needed this week = adjusted weekly target − hours already completed this week (Mon–today, excluding today's incomplete entry); (b) required swipe-out time today = swipeIn + remaining hours − breakfast bonus if applicable; (c) Display as 'You need Xh XXm more this week. Swipe out at HH:MM to complete your weekly target.' Update prediction live when swipe-in or breakfast changes.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-dashboard-screen-with-three-tabs-today-week-and-month-today-tab-swipe-in-swipe-out-daily-hours-core-hours-status-week-tab-weekly-target-completed-hours-remaining-hours-deficit-if-any-a-visual-progress-bar-weekly-status-indicator-on-track-in-green-behind-schedule-in-red-and-weekend-compensation-message-you-have-xxh-xxm-deficit-work-on-weekend-when-applicable-month-tab-total-monthly-hours-count-of-working-days-average-daily-hours",
+      "title": "Build a Dashboard screen with three tabs: Today, Week, and Month. Today tab: swipe-in, swipe-out, daily hours, core hours status. Week tab: weekly target, completed hours, remaining hours, deficit (if any), a visual progress bar, weekly status indicator (On Track in green / Behind Schedule in red), and weekend compensation message ('You have XXh XXm deficit. Work on weekend.') when applicable. Month tab: total monthly hours, count of working days, average daily hours.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-leaves-screen-that-lists-all-full-day-leaves-date-type-all-half-day-leaves-date-type-and-a-complete-chronological-leave-history-allow-tapping-a-leave-entry-to-view-full-details-show-a-summary-count-of-total-full-day-and-half-day-leaves-taken",
+      "title": "Build a Leaves screen that lists: all full-day leaves (date, type), all half-day leaves (date, type), and a complete chronological leave history. Allow tapping a leave entry to view full details. Show a summary count of total full-day and half-day leaves taken.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-an-analytics-screen-showing-1-a-bar-or-line-chart-of-daily-hours-for-the-current-week-2-a-bar-or-line-chart-of-weekly-total-hours-for-the-current-month-3-stats-panel-average-daily-hours-average-weekly-hours-highest-single-day-lowest-single-day-excluding-leaves-and-weekends",
+      "title": "Build an Analytics screen showing: (1) A bar or line chart of daily hours for the current week. (2) A bar or line chart of weekly total hours for the current month. (3) Stats panel: average daily hours, average weekly hours, highest single day, lowest single day (excluding leaves and weekends).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-csv-and-excel-export-when-the-user-triggers-export-from-a-dedicated-export-screen-or-menu-generate-a-downloadable-file-containing-columns-date-swipe-in-swipe-out-hours-breakfast-yes-no-leave-type-allow-user-to-select-export-range-current-week-current-month-or-all-records-provide-both-csv-and-excel-xlsx-format-options",
+      "title": "Implement CSV and Excel export. When the user triggers export from a dedicated Export screen or menu, generate a downloadable file containing columns: Date, Swipe-In, Swipe-Out, Hours, Breakfast (Yes/No), Leave Type. Allow user to select export range: current week, current month, or all records. Provide both CSV and Excel (XLSX) format options.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-in-app-notification-reminders-using-browser-notification-api-with-permission-request-on-first-use-a-10-00-am-reminder-don-t-forget-to-swipe-in-and-a-6-30-pm-reminder-don-t-forget-to-swipe-out-schedule-reminders-daily-using-settimeout-setinterval-calibrated-to-the-next-occurrence-notifications-should-only-fire-on-weekdays",
+      "title": "Implement in-app notification reminders using browser Notification API (with permission request on first use): a 10:00 AM reminder 'Don't forget to swipe in' and a 6:30 PM reminder 'Don't forget to swipe out'. Schedule reminders daily using setTimeout/setInterval calibrated to the next occurrence. Notifications should only fire on weekdays.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-internet-identity-authentication-as-the-login-mechanism-users-must-authenticate-via-internet-identity-before-accessing-any-data-all-backend-calls-must-use-the-authenticated-principal-as-the-user-identifier-so-records-are-scoped-per-user",
+      "title": "Implement Internet Identity authentication as the login mechanism. Users must authenticate via Internet Identity before accessing any data. All backend calls must use the authenticated principal as the user identifier so records are scoped per user.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-offline-first-data-handling-using-localstorage-as-an-offline-cache-when-the-backend-is-unreachable-save-records-to-localstorage-on-reconnection-app-load-sync-any-pending-local-records-to-the-backend-automatically-display-a-subtle-sync-status-indicator-e-g-syncing-synced-in-the-ui",
+      "title": "Implement offline-first data handling using localStorage as an offline cache. When the backend is unreachable, save records to localStorage. On reconnection/app load, sync any pending local records to the backend automatically. Display a subtle sync status indicator (e.g., 'Syncing…' / 'Synced') in the UI.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-light-mode-and-dark-mode-theming-with-a-toggle-accessible-from-a-settings-or-profile-menu-the-selected-theme-must-be-saved-to-localstorage-and-applied-on-next-app-load-automatically-all-screens-and-components-must-respect-the-active-theme",
+      "title": "Implement light mode and dark mode theming with a toggle accessible from a settings or profile menu. The selected theme must be saved to localStorage and applied on next app load automatically. All screens and components must respect the active theme.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-premium-mobile-first-visual-design-throughout-the-app-use-a-sophisticated-dark-charcoal-and-warm-gold-amber-accent-palette-for-dark-mode-and-clean-off-white-with-deep-slate-and-amber-accents-for-light-mode-use-rounded-cards-with-soft-shadows-smooth-page-transition-animations-modern-sans-serif-typography-with-clear-hierarchy-and-a-bottom-tab-navigation-bar-for-mobile-today-dashboard-leaves-analytics-export-tabs-ensure-all-interactive-elements-have-smooth-hover-press-states-and-the-layout-is-optimized-for-one-handed-phone-use",
+      "title": "Apply a premium, mobile-first visual design throughout the app. Use a sophisticated dark charcoal and warm gold/amber accent palette for dark mode, and clean off-white with deep slate and amber accents for light mode. Use rounded cards with soft shadows, smooth page transition animations, modern sans-serif typography with clear hierarchy, and a bottom tab navigation bar for mobile (Today, Dashboard, Leaves, Analytics, Export tabs). Ensure all interactive elements have smooth hover/press states and the layout is optimized for one-handed phone use.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-a-custom-app-icon-and-a-hero-splash-visual-for-the-swipetrack-pro-app",
+      "title": "Generate a custom app icon and a hero/splash visual for the SwipeTrack Pro app.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-working-hour-calculation-logic-in-frontend-src-utils-hourscalculation-ts-to-automatically-deduct-30-minutes-for-lunch-on-regular-working-days-leavetype-noleave-full-day-presence-the-updated-net-hours-formula-must-be-net-hours-swipeout-swipein-after-clamping-30-min-lunch-30-min-breakfast-bonus-if-breakfastatoffice-is-true-half-day-leave-entries-first-half-and-second-half-must-not-have-the-lunch-deduction-applied-as-per-the-existing-rules-full-day-leave-entries-continue-to-return-0-daily-hours-with-no-deduction",
+      "title": "Update the working-hour calculation logic in `frontend/src/utils/hoursCalculation.ts` to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave / full-day presence). The updated net hours formula must be: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Half-day leave entries (first half and second half) must NOT have the lunch deduction applied, as per the existing rules. Full-day leave entries continue to return 0 daily hours with no deduction.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Create a Motoko backend actor that stores attendance records with the following fields per entry: date (Text), swipeIn (Text), swipeOut (Text), breakfastAtOffice (Bool), leaveType (variant: #noLeave, #halfDayFirstHalf, #halfDaySecondHalf, #fullDayLeave), and a stable HashMap keyed by userId+date. Expose CRUD functions: saveRecord, getRecord, getRecordsByDateRange, deleteRecord, getAllRecords.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Office Attendance Tracker",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

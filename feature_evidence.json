@@ -1,0 +1,26 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-update-the-working-hour-calculation-logic-in-frontend-src-utils-hourscalculation-ts-to-automatically-deduct-30-minutes-for-lunch-on-regular-working-days-leavetype-noleave-full-day-presence-the-updated-net-hours-formula-must-be-net-hours-swipeout-swipein-after-clamping-30-min-lunch-30-min-breakfast-bonus-if-breakfastatoffice-is-true-half-day-leave-entries-first-half-and-second-half-must-not-have-the-lunch-deduction-applied-as-per-the-existing-rules-full-day-leave-entries-continue-to-return-0-daily-hours-with-no-deduction",
+      "featureTitle": "Update the working-hour calculation logic in `frontend/src/utils/hoursCalculation.ts` to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave / full-day presence). The updated net hours formula must be: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Half-day leave entries (first half and second half) must NOT have the lunch deduction applied, as per the existing rules. Full-day leave entries continue to return 0 daily hours with no deduction.",
+      "files": [
+        "frontend/src/components/SmartSwipeOutPrediction.tsx",
+        "frontend/src/utils/hoursCalculation.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-15"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

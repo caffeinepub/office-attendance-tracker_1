@@ -1,0 +1,327 @@
+import React, { useMemo } from 'react';
+import { format } from 'date-fns';
+import { TrendingUp, TrendingDown, Clock, Calendar, BarChart2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AttendanceRecord, LeaveType } from '../backend';
+import {
+  calculateDailyHours,
+  calculateWeeklyTarget,
+  checkCoreHoursViolation,
+  formatHoursDisplay,
+  formatDateKey,
+  getWeekRange,
+  getMonthRange,
+  isWeekendDate,
+  DEFAULT_WEEKLY_TARGET,
+  getLeaveTypeLabel,
+} from '../utils/hoursCalculation';
+import { useGetRecordsByDateRange } from '../hooks/useQueries';
+
+function leaveTypeToStr(lt: LeaveType): 'noLeave' | 'halfDayFirstHalf' | 'halfDaySecondHalf' | 'fullDayLeave' {
+  return lt as unknown as 'noLeave' | 'halfDayFirstHalf' | 'halfDaySecondHalf' | 'fullDayLeave';
+}
+
+function toCalcRecord(r: AttendanceRecord) {
+  return {
+    date: r.date,
+    swipeIn: r.swipeIn,
+    swipeOut: r.swipeOut,
+    breakfastAtOffice: r.breakfastAtOffice,
+    leaveType: leaveTypeToStr(r.leaveType as unknown as LeaveType),
+  };
+}
+
+interface StatCardProps {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: React.ReactNode;
+  accent?: boolean;
+}
+
+function StatCard({ label, value, sub, icon, accent }: StatCardProps) {
+  return (
+    <div className={`app-card p-4 flex items-center gap-3 ${accent ? 'border-primary/30' : ''}`}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${accent ? 'bg-primary/10' : 'bg-secondary'}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground font-medium">{label}</p>
+        <p className={`text-xl font-display font-bold leading-tight ${accent ? 'text-primary' : 'text-foreground'}`}>{value}</p>
+        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
+  const today = new Date();
+  const todayKey = formatDateKey(today);
+  const weekRange = getWeekRange(today);
+  const monthRange = getMonthRange(today);
+
+  const { data: weekRecords = [], isLoading: weekLoading } = useGetRecordsByDateRange(weekRange.start, weekRange.end);
+  const { data: monthRecords = [], isLoading: monthLoading } = useGetRecordsByDateRange(monthRange.start, monthRange.end);
+
+  const todayRecord = weekRecords.find(r => r.date === todayKey);
+
+  // Week calculations
+  const weekData = useMemo(() => {
+    const calcRecords = weekRecords.map(toCalcRecord);
+    const target = calculateWeeklyTarget(calcRecords);
+    const completed = calcRecords.reduce((sum, r) => sum + calculateDailyHours(r), 0);
+    const remaining = Math.max(0, target - completed);
+    const deficit = completed < target ? target - completed : 0;
+    const progress = target > 0 ? Math.min(100, (completed / target) * 100) : 0;
+
+    // Determine if on track: compare completed vs expected by today
+    const weekStart = new Date(weekRange.start);
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Mon=1, Sun=7
+    const workdaysPassed = Math.min(dayOfWeek, 5); // Mon-Fri
+    const expectedByNow = (target / 5) * workdaysPassed;
+    const onTrack = completed >= expectedByNow;
+
+    // Weekend hours
+    const weekendHours = calcRecords
+      .filter(r => isWeekendDate(r.date))
+      .reduce((sum, r) => sum + calculateDailyHours(r), 0);
+
+    return { target, completed, remaining, deficit, progress, onTrack, weekendHours };
+  }, [weekRecords, weekRange.start, today]);
+
+  // Month calculations
+  const monthData = useMemo(() => {
+    const calcRecords = monthRecords.map(toCalcRecord);
+    const totalHours = calcRecords.reduce((sum, r) => sum + calculateDailyHours(r), 0);
+    const workingDays = calcRecords.filter(r => !isWeekendDate(r.date) && r.leaveType !== 'fullDayLeave' && (r.swipeIn || r.swipeOut)).length;
+    const avgDaily = workingDays > 0 ? totalHours / workingDays : 0;
+    return { totalHours, workingDays, avgDaily };
+  }, [monthRecords]);
+
+  // Today data
+  const todayData = useMemo(() => {
+    if (!todayRecord) return null;
+    const calc = toCalcRecord(todayRecord);
+    const hours = calculateDailyHours(calc);
+    const coreViolation = checkCoreHoursViolation(calc);
+    return { hours, coreViolation, record: todayRecord };
+  }, [todayRecord]);
+
+  return (
+    <div className="page-enter px-4 py-5 space-y-4">
+      <div>
+        <h2 className="text-2xl font-display font-bold text-foreground">Dashboard</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{format(today, 'EEEE, MMMM d, yyyy')}</p>
+      </div>
+
+      <Tabs defaultValue="today" className="w-full">
+        <TabsList className="w-full rounded-xl h-11 bg-secondary p-1">
+          <TabsTrigger value="today" className="flex-1 rounded-lg text-sm font-medium">Today</TabsTrigger>
+          <TabsTrigger value="week" className="flex-1 rounded-lg text-sm font-medium">Week</TabsTrigger>
+          <TabsTrigger value="month" className="flex-1 rounded-lg text-sm font-medium">Month</TabsTrigger>
+        </TabsList>
+
+        {/* TODAY TAB */}
+        <TabsContent value="today" className="mt-4 space-y-3 animate-fade-in">
+          {weekLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-20 rounded-2xl" />
+            </div>
+          ) : todayData ? (
+            <>
+              {/* Hours card */}
+              <div className="app-card p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm font-semibold text-muted-foreground">Today's Hours</p>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    todayData.coreViolation
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-success/10 text-success'
+                  }`}>
+                    {todayData.coreViolation ? 'Core Hours ⚠️' : 'Core Hours ✓'}
+                  </span>
+                </div>
+                <p className="text-5xl font-display font-bold text-primary">
+                  {formatHoursDisplay(todayData.hours)}
+                </p>
+              </div>
+
+              {/* Swipe times */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="app-card p-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Swipe In</p>
+                  <p className="text-xl font-display font-bold text-foreground">
+                    {todayData.record.swipeIn || '—'}
+                  </p>
+                </div>
+                <div className="app-card p-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Swipe Out</p>
+                  <p className="text-xl font-display font-bold text-foreground">
+                    {todayData.record.swipeOut || '—'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Leave & Breakfast */}
+              <div className="app-card p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Leave Type</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {getLeaveTypeLabel(leaveTypeToStr(todayData.record.leaveType as unknown as LeaveType))}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Breakfast</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {todayData.record.breakfastAtOffice ? 'Yes (+30m)' : 'No'}
+                  </p>
+                </div>
+              </div>
+
+              {todayData.coreViolation && (
+                <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                  <p className="text-xs font-medium text-destructive">Core hours requirement not met (9:30 AM – 4:00 PM)</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="app-card p-8 flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+                <Clock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-base font-semibold text-foreground mb-1">No entry for today</p>
+              <p className="text-sm text-muted-foreground">Go to Today tab to log your attendance</p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* WEEK TAB */}
+        <TabsContent value="week" className="mt-4 space-y-3 animate-fade-in">
+          {weekLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-32 rounded-2xl" />
+              <Skeleton className="h-24 rounded-2xl" />
+            </div>
+          ) : (
+            <>
+              {/* Status indicator */}
+              <div className={`app-card p-4 flex items-center gap-3 ${weekData.onTrack ? 'border-success/30' : 'border-destructive/30'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${weekData.onTrack ? 'bg-success/10' : 'bg-destructive/10'}`}>
+                  {weekData.onTrack
+                    ? <TrendingUp className="w-5 h-5 text-success" />
+                    : <TrendingDown className="w-5 h-5 text-destructive" />
+                  }
+                </div>
+                <div>
+                  <p className={`text-base font-display font-bold ${weekData.onTrack ? 'text-success' : 'text-destructive'}`}>
+                    {weekData.onTrack ? 'On Track' : 'Behind Schedule'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(weekRange.start), 'MMM d')} – {format(new Date(weekRange.end), 'MMM d')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress */}
+              <div className="app-card p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-muted-foreground">Weekly Progress</span>
+                  <span className="text-sm font-bold text-foreground">{Math.round(weekData.progress)}%</span>
+                </div>
+                <Progress value={weekData.progress} className="h-3 rounded-full" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{formatHoursDisplay(weekData.completed)} done</span>
+                  <span>{formatHoursDisplay(weekData.target)} target</span>
+                </div>
+              </div>
+
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard
+                  label="Completed"
+                  value={formatHoursDisplay(weekData.completed)}
+                  icon={<CheckCircle2 className="w-5 h-5 text-success" />}
+                  accent
+                />
+                <StatCard
+                  label="Remaining"
+                  value={formatHoursDisplay(weekData.remaining)}
+                  icon={<Clock className="w-5 h-5 text-primary" />}
+                />
+                <StatCard
+                  label="Weekly Target"
+                  value={formatHoursDisplay(weekData.target)}
+                  sub="adjusted for leaves"
+                  icon={<BarChart2 className="w-5 h-5 text-muted-foreground" />}
+                />
+                <StatCard
+                  label="Deficit"
+                  value={weekData.deficit > 0 ? formatHoursDisplay(weekData.deficit) : '—'}
+                  icon={<TrendingDown className="w-5 h-5 text-muted-foreground" />}
+                />
+              </div>
+
+              {/* Weekend compensation */}
+              {weekData.deficit > 0 && (
+                <div className="flex items-start gap-3 bg-warning/10 border border-warning/20 rounded-xl p-3">
+                  <Calendar className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-warning">
+                      You have {formatHoursDisplay(weekData.deficit)} deficit. Work on weekend.
+                    </p>
+                    {weekData.weekendHours > 0 && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Weekend hours logged: {formatHoursDisplay(weekData.weekendHours)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* MONTH TAB */}
+        <TabsContent value="month" className="mt-4 space-y-3 animate-fade-in">
+          {monthLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-20 rounded-2xl" />
+            </div>
+          ) : (
+            <>
+              <div className="app-card p-5">
+                <p className="text-xs text-muted-foreground font-medium mb-1">
+                  {format(today, 'MMMM yyyy')} Total
+                </p>
+                <p className="text-5xl font-display font-bold text-primary">
+                  {formatHoursDisplay(monthData.totalHours)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard
+                  label="Working Days"
+                  value={String(monthData.workingDays)}
+                  sub="days logged"
+                  icon={<Calendar className="w-5 h-5 text-primary" />}
+                  accent
+                />
+                <StatCard
+                  label="Avg Daily"
+                  value={formatHoursDisplay(monthData.avgDaily)}
+                  sub="per working day"
+                  icon={<BarChart2 className="w-5 h-5 text-muted-foreground" />}
+                />
+              </div>
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

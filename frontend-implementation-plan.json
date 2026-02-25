@@ -1,0 +1,47 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Add 30-minute lunch deduction to working-hour calculation",
+  "requirements": [
+    {
+      "id": "REQ-15",
+      "summary": "Update working-hour calculation logic to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave), ensuring half-day and full-day leave entries are not affected",
+      "acceptanceCriteria": [
+        "For a No Leave day, swipe-in 07:00 and swipe-out 16:00 (no breakfast) yields exactly 8h 30m net hours.",
+        "For a No Leave day, swipe-in 07:00 and swipe-out 16:00 with breakfast yields exactly 9h 00m net hours.",
+        "Half-Day First Half entries do not have 30 minutes deducted for lunch.",
+        "Half-Day Second Half entries do not have 30 minutes deducted for lunch.",
+        "Full-Day Leave entries still return 0 daily hours.",
+        "Smart Swipe-Out Prediction and Dashboard/Analytics screens reflect the updated net hours (lunch deduction applied) correctly.",
+        "All existing unit-level logic for clamping, breakfast bonus, and leave reductions remains intact."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/hoursCalculation.ts",
+          "operation": "modify",
+          "description": "Update the calculateDailyHours function to apply a 30-minute lunch deduction for regular working days (leaveType = #noLeave). Modify the net hours formula to: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Ensure the lunch deduction is only applied when leaveType is #noLeave and never for half-day leave entries (#halfDayFirstHalf, #halfDaySecondHalf) or full-day leave entries (#fullDayLeave). Preserve all existing logic for time parsing, work window clamping (7:00–18:30), breakfast bonus (+30 min), and leave-type-specific reductions. Add inline comments explaining the lunch deduction logic and its conditional application based on leave type."
+        },
+        {
+          "path": "frontend/src/components/SmartSwipeOutPrediction.tsx",
+          "operation": "modify",
+          "description": "Review and verify that the smart swipe-out prediction correctly reflects the updated working-hour calculation with the 30-minute lunch deduction. The component uses calculateTotalHoursForRange and calculateDailyHours indirectly, so ensure the predicted swipe-out time accounts for the lunch break when calculating remaining hours to reach the weekly target. No logic changes should be needed if hoursCalculation.ts is updated correctly, but add a test scenario comment to document that lunch deduction is factored into predictions for #noLeave days."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Review and verify that the Dashboard page correctly displays weekly and monthly summary stats using the updated working-hour calculation with lunch deduction. The page uses calculateTotalHoursForRange which depends on calculateDailyHours, so ensure weekly progress and on-track status reflect the new net hours formula. No code changes should be required if hoursCalculation.ts is updated correctly, but add a verification comment confirming lunch deduction is included in displayed hours for regular working days."
+        },
+        {
+          "path": "frontend/src/pages/Analytics.tsx",
+          "operation": "modify",
+          "description": "Review and verify that the Analytics page bar charts and summary statistics correctly reflect the updated working-hour calculation with lunch deduction. The page uses calculateDailyHours and calculateTotalHoursForRange to generate chart data and compute average/highest/lowest hours, so ensure all displayed metrics include the 30-minute lunch deduction for #noLeave days. No code changes should be required if hoursCalculation.ts is updated correctly, but add a verification comment confirming lunch deduction is factored into all analytics metrics."
+        },
+        {
+          "path": "frontend/src/pages/Export.tsx",
+          "operation": "modify",
+          "description": "Review and verify that the Export page generates CSV/TSV/XLSX files with attendance records showing the updated daily hours including the 30-minute lunch deduction. The page uses calculateDailyHours to compute hours for each record, so ensure exported data reflects the new net hours formula for #noLeave days. No code changes should be required if hoursCalculation.ts is updated correctly, but add a verification comment confirming exported hours include lunch deduction for regular working days."
+        }
+      ]
+    }
+  ]
+}
