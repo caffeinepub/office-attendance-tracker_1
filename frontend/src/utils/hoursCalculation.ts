@@ -12,6 +12,12 @@ export const HALF_DAY_FIRST_REDUCTION = 4 * 60 + 30; // 4h 30m
 export const HALF_DAY_SECOND_REDUCTION = 4 * 60; // 4h 00m
 export const DAILY_TARGET_MINUTES = 8 * 60 + 30; // 8h 30m – standard daily target
 
+const HALF_PAST_12 = 12 * 60 + 30; // 12:30 in minutes
+const ONE_PM = 13 * 60; // 13:00 in minutes
+
+// The afternoon half always starts at 13:00 for halfDayFirstHalf entries
+const FIRST_HALF_END = 13 * 60; // 13:00 in minutes – effective start for first-half leave afternoon work
+
 export type LeaveTypeStr = 'noLeave' | 'halfDayFirstHalf' | 'halfDaySecondHalf' | 'fullDayLeave';
 
 export interface DayRecord {
@@ -68,9 +74,6 @@ export function applyLeaveTimeAdjustments(
   swipeOutMinutes: number,
   leaveType: LeaveTypeStr
 ): { swipeIn: number; swipeOut: number } {
-  const HALF_PAST_12 = 12 * 60 + 30; // 12:30 PM
-  const ONE_PM = 13 * 60; // 1:00 PM
-
   if (leaveType === 'halfDayFirstHalf') {
     // If swipe-in is between 12:30 PM and 1:00 PM, auto-set to 1:00 PM
     if (swipeInMinutes >= HALF_PAST_12 && swipeInMinutes <= ONE_PM) {
@@ -93,72 +96,97 @@ export function applyLeaveTimeAdjustments(
  *
  * Rules:
  * - fullDayLeave: 0 minutes.
- * - halfDayFirstHalf: raw clamped hours from swipeIn, no lunch deduction.
+ *
+ * - halfDayFirstHalf:
+ *     The employee takes the morning (first half) as leave and works the afternoon.
+ *     Working window is ALWAYS fixed from 13:00 → clampedSwipeOut (max 19:00).
+ *     Actual swipe-in time is completely ignored — the effective start is always 13:00.
+ *     No breakfast bonus (employee not in office during morning).
+ *     No lunch deduction.
+ *     Example: swipeIn=08:00, swipeOut=16:00, breakfast=true  → 16:00 − 13:00 = 3h 00m
+ *     Example: swipeIn=13:00, swipeOut=16:00, breakfast=false → 16:00 − 13:00 = 3h 00m
+ *     Example: swipeIn=14:00, swipeOut=18:00, breakfast=false → 18:00 − 13:00 = 5h 00m
+ *     Example: swipeIn=09:00, swipeOut=20:00, breakfast=true  → 19:00 − 13:00 = 6h 00m (clamped)
+ *
  * - halfDaySecondHalf:
- *     If swipeOut > 13:00, extra hours = (clampedSwipeOut − 13:00) + breakfast bonus if applicable.
- *     If swipeOut ≤ 13:00, 0 extra hours (employee left before/at 13:00).
+ *     Primary block: clampedSwipeIn (min 07:00) → 12:30.
+ *     If swipeOut > 13:00, extra hours = clampedSwipeOut (max 19:00) − 13:00 are added.
+ *     Breakfast bonus (+30 min) applies when breakfastAtOffice is true.
+ *     No lunch deduction.
+ *     Example: swipeIn=08:00, swipeOut=12:30, breakfast=false → 12:30 − 08:00 = 4h 30m ✓
+ *     Example: swipeIn=08:00, swipeOut=12:30, breakfast=true  → (12:30 − 08:00) + 0:30 = 5h 00m
+ *     Example: swipeIn=08:00, swipeOut=15:00, breakfast=false → (12:30 − 08:00) + (15:00 − 13:00) = 6h 30m
+ *
  * - noLeave (regular working day):
  *     net = (clampedOut − clampedIn) − LUNCH_DEDUCTION (30 min) + BREAKFAST_BONUS (30 min, if applicable)
- *
- * Example: swipeIn=07:00, swipeOut=16:00, no breakfast, noLeave
- *   raw = 9h 00m, net = 9h 00m − 30m lunch = 8h 30m ✓
- *
- * Example: swipeIn=07:00, swipeOut=16:00, breakfast=true, noLeave
- *   raw = 9h 00m, net = 9h 00m − 30m lunch + 30m breakfast = 9h 00m ✓
- *
- * Example: halfDaySecondHalf, swipeOut=15:00, no breakfast
- *   extra = 15:00 − 13:00 = 2h 00m ✓
+ *     Example: swipeIn=07:00, swipeOut=16:00, no breakfast → 9h 00m − 30m = 8h 30m ✓
  */
 export function calculateDailyHours(record: DayRecord): number {
   if (record.leaveType === 'fullDayLeave') return 0;
 
   if (!record.swipeIn || !record.swipeOut) return 0;
 
-  let swipeInMins = parseTime(record.swipeIn);
-  let swipeOutMins = parseTime(record.swipeOut);
+  const swipeInMins = parseTime(record.swipeIn);
+  const swipeOutMins = parseTime(record.swipeOut);
 
+  // --- halfDayFirstHalf ---
+  // The employee takes the MORNING as leave and works the AFTERNOON.
+  // Effective working window is always 13:00 → clampedSwipeOut (max 19:00).
+  // Actual swipe-in is completely ignored — start is always FIRST_HALF_END (13:00).
+  // No breakfast bonus. No lunch deduction.
+  if (record.leaveType === 'halfDayFirstHalf') {
+    // Cap swipe-out at 19:00
+    const effectiveOut = Math.min(swipeOutMins, WORK_WINDOW_END);
+    // Net hours = swipeOut − 13:00 (clamped to 0 if swipeOut ≤ 13:00)
+    const hours = Math.max(0, effectiveOut - FIRST_HALF_END);
+    return hours;
+  }
+
+  // For all other leave types, validate that swipeOut > swipeIn
   if (swipeOutMins <= swipeInMins) return 0;
 
-  const ONE_PM = 13 * 60; // 13:00 in minutes
-
-  // Special handling for halfDaySecondHalf
+  // --- halfDaySecondHalf ---
+  // Primary block: clampedSwipeIn → 12:30
+  // Extra block: if swipeOut > 13:00, add (clampedSwipeOut − 13:00)
+  // Breakfast bonus applies. No lunch deduction.
   if (record.leaveType === 'halfDaySecondHalf') {
-    if (swipeOutMins <= ONE_PM) {
-      // Worked up to 13:00 or earlier — no credited hours
-      return 0;
+    const effectiveIn = clampToWorkingWindow(swipeInMins);
+    // Primary block: from effectiveIn up to 12:30
+    const primaryHours = Math.max(0, HALF_PAST_12 - effectiveIn);
+
+    // Extra block: hours worked after 13:00
+    let extraHours = 0;
+    if (swipeOutMins > ONE_PM) {
+      const effectiveOut = clampToWorkingWindow(swipeOutMins);
+      extraHours = Math.max(0, effectiveOut - ONE_PM);
     }
-    // Worked after 13:00 — credit hours from 13:00 onwards
-    const effectiveOut = clampToWorkingWindow(swipeOutMins);
-    let hours = Math.max(0, effectiveOut - ONE_PM);
+
+    let hours = primaryHours + extraHours;
+
+    // Breakfast bonus
     if (record.breakfastAtOffice) {
       hours += BREAKFAST_BONUS;
     }
+
     return Math.max(0, hours);
   }
 
-  // Apply leave time adjustments (half-day boundary corrections)
+  // --- noLeave (regular working day) ---
+  // Apply leave time adjustments (half-day boundary corrections for edge cases)
   const adjusted = applyLeaveTimeAdjustments(swipeInMins, swipeOutMins, record.leaveType);
-  swipeInMins = adjusted.swipeIn;
-  swipeOutMins = adjusted.swipeOut;
-
-  // Clamp to working window
-  const effectiveIn = clampToWorkingWindow(swipeInMins);
-  const effectiveOut = clampToWorkingWindow(swipeOutMins);
+  const effectiveIn = clampToWorkingWindow(adjusted.swipeIn);
+  const effectiveOut = clampToWorkingWindow(adjusted.swipeOut);
 
   let hours = Math.max(0, effectiveOut - effectiveIn);
 
-  if (record.leaveType === 'noLeave') {
-    // Deduct 30 minutes for lunch break on regular working days only
-    hours -= LUNCH_DEDUCTION;
+  // Deduct 30 minutes for lunch break on regular working days only
+  hours -= LUNCH_DEDUCTION;
 
-    // Add breakfast bonus if employee had breakfast at the office
-    if (record.breakfastAtOffice) {
-      hours += BREAKFAST_BONUS;
-    }
+  // Add breakfast bonus if employee had breakfast at the office
+  if (record.breakfastAtOffice) {
+    hours += BREAKFAST_BONUS;
   }
-  // halfDayFirstHalf: no lunch deduction, no breakfast bonus adjustment
 
-  // Ensure we never return negative minutes
   return Math.max(0, hours);
 }
 
@@ -183,6 +211,23 @@ export function getLeaveReduction(leaveType: LeaveTypeStr): number {
     case 'halfDayFirstHalf': return HALF_DAY_FIRST_REDUCTION;
     case 'halfDaySecondHalf': return HALF_DAY_SECOND_REDUCTION;
     default: return 0;
+  }
+}
+
+/**
+ * Returns the daily target hours (in minutes) for a given leave type.
+ *
+ * - halfDayFirstHalf  → 4h 30m (270 min) — afternoon half target
+ * - halfDaySecondHalf → 4h 00m (240 min) — morning half target
+ * - noLeave           → 8h 30m (510 min) — full day target
+ * - fullDayLeave      → 0 (no threshold check applies)
+ */
+export function getTargetHoursForLeaveType(leaveType: LeaveTypeStr): number {
+  switch (leaveType) {
+    case 'halfDayFirstHalf': return HALF_DAY_FIRST_REDUCTION;   // 270 min = 4h 30m
+    case 'halfDaySecondHalf': return HALF_DAY_SECOND_REDUCTION; // 240 min = 4h 00m
+    case 'fullDayLeave': return 0;                              // no threshold
+    default: return DAILY_TARGET_MINUTES;                       // 510 min = 8h 30m
   }
 }
 
@@ -245,15 +290,19 @@ export function getCurrentTimeString(): string {
 /**
  * Calculate smart swipe-out prediction.
  *
- * For a noLeave day, the lunch deduction (30 min) will be applied when hours are
- * calculated, so the employee needs to stay LUNCH_DEDUCTION extra raw minutes to
- * achieve the required net minutes. The breakfast bonus reduces the raw time needed.
+ * For noLeave days: adds LUNCH_DEDUCTION to required raw time, subtracts breakfast bonus.
  *
- * Example: remaining=8h30m, noLeave, no breakfast
- *   requiredRaw = 8h30m + 30m lunch = 9h00m raw → swipe out at swipeIn + 9h00m
+ * For halfDayFirstHalf:
+ *   - Fixed start at 13:00, no breakfast bonus.
+ *   - predictedSwipeOut = 13:00 + remaining (clamped to 19:00).
  *
- * Example: remaining=8h30m, noLeave, breakfast=true
- *   requiredRaw = 8h30m + 30m lunch − 30m breakfast = 8h30m raw
+ * For halfDaySecondHalf:
+ *   - Primary block ends at 12:30. Breakfast bonus reduces raw time needed.
+ *   - If remaining can be covered by primary block (clampedIn → 12:30 + breakfast),
+ *     predicted swipe-out is within the morning block.
+ *   - If remaining exceeds primary block, extra hours are needed after 13:00.
+ *
+ * For fullDayLeave: no prediction needed (remaining will be 0 after target reduction).
  */
 export function calculateSwipeOutPrediction(
   swipeInStr: string,
@@ -273,20 +322,64 @@ export function calculateSwipeOutPrediction(
   }
 
   const swipeInMins = parseTime(swipeInStr);
+
+  // --- halfDayFirstHalf ---
+  // Working window starts at 13:00 regardless of actual swipe-in.
+  // No breakfast bonus. Predict: 13:00 + remaining, clamped to 19:00.
+  if (leaveType === 'halfDayFirstHalf') {
+    const predictedOut = FIRST_HALF_END + remaining;
+    const clampedOut = Math.min(predictedOut, WORK_WINDOW_END);
+    return {
+      needed: remaining,
+      predictedSwipeOut: formatMinutes(clampedOut),
+      alreadyMet: false,
+    };
+  }
+
+  // --- halfDaySecondHalf ---
+  // Primary block: clampedSwipeIn → 12:30 (+ breakfast bonus if applicable).
+  // If remaining fits in primary block, predict swipe-out within morning.
+  // If remaining exceeds primary block, extra hours needed after 13:00.
+  if (leaveType === 'halfDaySecondHalf') {
+    const effectiveIn = clampToWorkingWindow(swipeInMins);
+    const primaryBlockMinutes = Math.max(0, HALF_PAST_12 - effectiveIn);
+    const breakfastBonus = breakfastAtOffice ? BREAKFAST_BONUS : 0;
+    const totalMorningCapacity = primaryBlockMinutes + breakfastBonus;
+
+    if (remaining <= totalMorningCapacity) {
+      // Can finish within the morning block
+      // Solve: (predictedOut - effectiveIn) + breakfastBonus = remaining
+      // predictedOut = effectiveIn + remaining - breakfastBonus
+      const rawNeeded = Math.max(0, remaining - breakfastBonus);
+      const predictedOut = effectiveIn + rawNeeded;
+      const clampedOut = Math.min(predictedOut, HALF_PAST_12);
+      return {
+        needed: remaining,
+        predictedSwipeOut: formatMinutes(clampedOut),
+        alreadyMet: false,
+      };
+    } else {
+      // Need extra hours after 13:00
+      // Extra needed = remaining - totalMorningCapacity
+      const extraNeeded = remaining - totalMorningCapacity;
+      const predictedOut = ONE_PM + extraNeeded;
+      const clampedOut = Math.min(predictedOut, WORK_WINDOW_END);
+      return {
+        needed: remaining,
+        predictedSwipeOut: formatMinutes(clampedOut),
+        alreadyMet: false,
+      };
+    }
+  }
+
+  // --- noLeave (regular working day) ---
   const effectiveIn = clampToWorkingWindow(swipeInMins);
 
-  // For noLeave days: the lunch deduction will be applied to the final hours,
-  // so we need to add LUNCH_DEDUCTION to the raw time needed.
-  // The breakfast bonus reduces the raw time needed (it adds to net hours).
-  let requiredRawTime = remaining;
-
-  if (leaveType === 'noLeave') {
-    // Add lunch deduction: employee must work 30 extra raw minutes to cover lunch
-    requiredRawTime += LUNCH_DEDUCTION;
-    // Subtract breakfast bonus: breakfast adds 30 net minutes, reducing raw time needed
-    if (breakfastAtOffice) {
-      requiredRawTime -= BREAKFAST_BONUS;
-    }
+  // Add lunch deduction: employee must work 30 extra raw minutes to cover lunch
+  let requiredRawTime = remaining + LUNCH_DEDUCTION;
+  // Subtract breakfast bonus: breakfast adds 30 net minutes, reducing raw time needed
+  if (breakfastAtOffice) {
+    requiredRawTime -= BREAKFAST_BONUS;
   }
 
   const requiredWorkTime = Math.max(0, requiredRawTime);
@@ -332,10 +425,20 @@ export function getWeekRange(date: Date): { start: string; end: string } {
 /**
  * Returns colour indicator info for a daily hours value.
  *
- * - fullDayLeave → neutral (no indicator)
- * - weekend with no record → neutral (no indicator)
- * - hours >= DAILY_TARGET_MINUTES (8h 30m) → green with surplus
- * - hours < DAILY_TARGET_MINUTES on a non-full-day-leave day → red with shortfall
+ * The comparison target (threshold) for each leave type:
+ * - fullDayLeave    → neutral (no indicator)
+ * - halfDayFirstHalf  → threshold = HALF_DAY_FIRST_REDUCTION = 4h 30m (270 min)
+ *                       (employee works the afternoon half; target is 4h 30m)
+ * - halfDaySecondHalf → threshold = HALF_DAY_SECOND_REDUCTION = 4h 00m (240 min)
+ *                       (employee works the morning half; target is 4h 00m)
+ * - noLeave         → threshold = DAILY_TARGET_MINUTES = 8h 30m (510 min)
+ *
+ * Examples:
+ *   halfDayFirstHalf, 3h 00m (180 min) < 4h 30m (270 min) → red  ✓
+ *   halfDayFirstHalf, 4h 30m (270 min) = 4h 30m (270 min) → green ✓
+ *   halfDaySecondHalf, 3h 00m (180 min) < 4h 00m (240 min) → red  ✓
+ *   halfDaySecondHalf, 4h 00m (240 min) = 4h 00m (240 min) → green ✓
+ *   noLeave, 8h 30m → green ✓
  */
 export interface DailyHoursIndicator {
   color: 'green' | 'red' | 'neutral';
@@ -367,20 +470,26 @@ export function getDailyHoursIndicator(
     return { color: 'neutral', hoursDisplay: '—', diffDisplay: null, diffMinutes: 0 };
   }
 
-  const diff = dailyMinutes - DAILY_TARGET_MINUTES;
+  // Determine the daily threshold based on leave type.
+  // For half-day leaves, the threshold is the expected hours for that half
+  // (i.e. the leave reduction value, which equals the expected working hours for that half).
+  // For regular days, the threshold is the full daily target.
+  const threshold = getTargetHoursForLeaveType(leaveType);
+
+  const diff = dailyMinutes - threshold;
 
   if (diff >= 0) {
     return {
       color: 'green',
       hoursDisplay,
-      diffDisplay: `+${formatHoursDisplay(diff)}`,
+      diffDisplay: diff > 0 ? `+${formatHoursDisplay(diff)}` : null,
       diffMinutes: diff,
     };
   } else {
     return {
       color: 'red',
       hoursDisplay,
-      diffDisplay: `-${formatHoursDisplay(Math.abs(diff))}`,
+      diffDisplay: `−${formatHoursDisplay(Math.abs(diff))}`,
       diffMinutes: diff,
     };
   }

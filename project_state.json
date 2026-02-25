@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 11,
+  "projectStateVersion": 21,
   "summary": "Production-ready office attendance tracker React app with swipe-in/out logging, automatic working hour calculations (42h 30m weekly target, 7AM-7PM window), core hours enforcement (9:30AM-4PM), 30-minute lunch deduction on regular working days, breakfast bonus (+30min), leave management (full-day, half-day first/second), weekend detection and compensation, smart swipe-out predictions, daily/weekly/monthly dashboard, leave history screen, analytics with charts, CSV/Excel export, push notification reminders, email auth with cloud sync/backup/restore, and premium dark/light mode mobile-first UI.",
   "architectural_notes": [
     "React PWA (mobile-first) with offline-first architecture using IndexedDB/localStorage for local persistence and cloud sync",
@@ -14,8 +14,11 @@
     "Export feature: CSV and Excel with date, swipe-in, swipe-out, hours, breakfast, leave type columns",
     "Push notification reminders at 10AM (swipe-in) and 6:30PM (swipe-out)"
   ],
-  "known_issues": [],
+  "known_issues": [
+    "First-half leave calculation incorrectly computes net hours; 13:00→16:00 should yield 3h 00m but does not."
+  ],
   "isFixRequest": false,
+  "imageRequirements": "## Required Images\n- SwipeTrack Pro app icon — dark charcoal circle background with a stylised amber/gold clock-and-checkmark motif, clean flat design (swipetrack-icon.dim_512x512.png)\n- SwipeTrack Pro app icon — same design, maskable safe-zone version with extra padding (swipetrack-icon-maskable.dim_512x512.png)\n- SwipeTrack Pro app icon — small size variant, same design (swipetrack-icon-192.dim_192x192.png)\n- SwipeTrack Pro app icon — medium size variant, same design (swipetrack-icon-144.dim_144x144.png)\n- SwipeTrack Pro app icon — small size variants for manifest (swipetrack-icon-96.dim_96x96.png)\n- SwipeTrack Pro app icon — smallest manifest size (swipetrack-icon-48.dim_48x48.png)\n- SwipeTrack Pro Apple touch icon — rounded square, dark charcoal with amber motif (swipetrack-apple-touch-icon.dim_180x180.png)",
   "existing_features": [
     {
       "id": "feature-implement-all-working-hour-calculation-logic-in-the-frontend-as-a-shared-utility-module-rules-1-effective-working-window-is-7-00-am-7-00-pm-clamp-swipe-in-to-07-00-if-earlier-clamp-swipe-out-to-19-00-if-later-2-raw-hours-swipeout-swipein-after-clamping-3-if-breakfastatoffice-is-true-add-30-minutes-4-full-day-leave-daily-hours-0-weekly-target-reduction-8h-30m-5-half-day-first-half-if-swipein-is-between-12-30-13-00-auto-set-to-13-00-target-reduction-4h-30m-no-lunch-deduction-6-half-day-second-half-if-swipeout-is-between-12-30-13-00-auto-set-to-12-30-target-reduction-4h-00m-no-lunch-deduction-7-default-weekly-target-42h-30m-adjusted-target-42h-30m-sum-of-leave-reductions-for-the-week-8-core-hours-9-30-am-4-00-pm-flag-violation-if-swipein-09-30-or-swipeout-16-00",
@@ -184,6 +187,70 @@
         "REQ-22"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-hourscalculation-ts-to-refine-the-first-half-leave-calculation-the-effective-working-window-must-start-at-13-00-ignore-actual-swipe-in-time-entirely-treat-it-as-13-00-regardless-of-what-was-entered-net-hours-clampedswipeout-capped-at-19-00-13-00-no-breakfast-bonus-must-be-applied-for-first-half-leave-entries-even-if-breakfastatoffice-is-true-no-lunch-deduction-target-reduction-remains-4h-30m",
+      "title": "Update `frontend/src/utils/hoursCalculation.ts` to refine the First-Half Leave calculation: the effective working window must start at 13:00 (ignore actual swipe-in time entirely — treat it as 13:00 regardless of what was entered). Net hours = clampedSwipeOut (capped at 19:00) − 13:00. No breakfast bonus must be applied for first-half leave entries, even if breakfastAtOffice is true. No lunch deduction. Target reduction remains 4h 30m.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-hourscalculation-ts-to-refine-the-second-half-leave-calculation-the-effective-working-window-ends-at-12-30-clamp-swipe-out-to-12-30-for-the-primary-block-net-hours-for-the-primary-block-12-30-clampedswipein-min-07-00-if-swipe-out-is-after-13-00-add-extra-hours-clampedswipeout-13-00-on-top-of-the-primary-block-existing-rule-preserved-breakfast-bonus-30-min-if-breakfastatoffice-is-true-applies-as-normal-no-lunch-deduction-target-reduction-remains-4h-00m",
+      "title": "Update `frontend/src/utils/hoursCalculation.ts` to refine the Second-Half Leave calculation: the effective working window ends at 12:30 (clamp swipe-out to 12:30 for the primary block). Net hours for the primary block = 12:30 − clampedSwipeIn (min 07:00). If swipe-out is after 13:00, add extra hours = clampedSwipeOut − 13:00 on top of the primary block (existing rule preserved). Breakfast bonus (+30 min if breakfastAtOffice is true) applies as normal. No lunch deduction. Target reduction remains 4h 00m.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-second-half-leave-calculation-in-frontend-src-utils-hourscalculation-ts-so-that-the-primary-block-net-hours-are-computed-as-12-30-clampedswipein-min-07-00-without-any-further-deductions-or-adjustments-that-reduce-the-result-for-the-example-swipe-in-08-00-swipe-out-12-30-with-leavetype-halfdaysecondhalf-clampedswipein-08-00-primary-block-12-30-08-00-4h-30m-no-lunch-deduction-applies-breakfast-bonus-30-min-if-breakfastatoffice-is-true-still-applies-on-top-of-the-primary-block-if-swipe-out-is-after-13-00-extra-hours-clampedswipeout-13-00-are-added-on-top-of-the-primary-block-as-before-target-reduction-remains-4h-00m-the-result-of-4h-30m-for-the-08-00-12-30-example-must-be-treated-as-meeting-the-half-day-expectation-and-displayed-in-green",
+      "title": "Fix the second-half leave calculation in `frontend/src/utils/hoursCalculation.ts` so that the primary block net hours are computed as `12:30 − clampedSwipeIn (min 07:00)` without any further deductions or adjustments that reduce the result. For the example swipe-in 08:00 → swipe-out 12:30 with leaveType halfDaySecondHalf: clampedSwipeIn = 08:00, primary block = 12:30 − 08:00 = 4h 30m. No lunch deduction applies. Breakfast bonus (+30 min if breakfastAtOffice is true) still applies on top of the primary block. If swipe-out is after 13:00, extra hours = clampedSwipeOut − 13:00 are added on top of the primary block as before. Target reduction remains 4h 00m. The result of 4h 30m for the 08:00→12:30 example must be treated as meeting the half-day expectation and displayed in green.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-first-half-leave-calculation-in-frontend-src-utils-hourscalculation-ts-so-that-net-hours-are-computed-as-clampedswipeout-capped-at-19-00-13-00-with-the-effective-window-always-starting-at-13-00-regardless-of-the-actual-swipe-in-time-entered-for-example-swipe-in-13-00-swipe-out-16-00-must-yield-exactly-3h-00m-no-breakfast-bonus-must-be-applied-for-halfdayfirsthalf-entries-even-if-breakfastatoffice-is-true-no-lunch-deduction-applies-target-reduction-remains-4h-30m",
+      "title": "Fix the first-half leave calculation in `frontend/src/utils/hoursCalculation.ts` so that net hours are computed as clampedSwipeOut (capped at 19:00) − 13:00, with the effective window always starting at 13:00 regardless of the actual swipe-in time entered. For example, swipe-in 13:00 → swipe-out 16:00 must yield exactly 3h 00m. No breakfast bonus must be applied for halfDayFirstHalf entries even if breakfastAtOffice is true. No lunch deduction applies. Target reduction remains 4h 30m.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-index-html-to-include-a-full-pwa-manifest-link-link-rel-manifest-href-manifest-json-theme-color-meta-tag-matching-the-app-s-amber-charcoal-palette-apple-mobile-web-app-meta-tags-apple-mobile-web-app-capable-apple-mobile-web-app-status-bar-style-apple-mobile-web-app-title-and-apple-touch-icon-links-for-common-ios-sizes-180-180-152-152-120-120",
+      "title": "Update `frontend/index.html` to include a full PWA manifest link (`<link rel='manifest' href='/manifest.json'>`), theme-color meta tag matching the app's amber/charcoal palette, Apple mobile web app meta tags (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`), and Apple touch icon links for common iOS sizes (180×180, 152×152, 120×120).",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-frontend-public-manifest-json-as-a-fully-pwa-compliant-web-app-manifest-with-name-swipetrack-pro-short-name-swipetrack-description-office-attendance-and-working-hours-tracker-start-url-display-standalone-orientation-portrait-theme-color-and-background-color-matching-the-app-s-dark-charcoal-amber-palette-and-an-icons-array-covering-sizes-48-72-96-128-144-152-192-384-and-512-pixels-including-at-least-one-entry-with-purpose-maskable-for-the-192-192-and-512-512-sizes-pointing-to-generated-icon-assets-in-frontend-public-assets-generated",
+      "title": "Create `frontend/public/manifest.json` as a fully PWA-compliant Web App Manifest with: `name: 'SwipeTrack Pro'`, `short_name: 'SwipeTrack'`, `description: 'Office attendance and working-hours tracker'`, `start_url: '/'`, `display: 'standalone'`, `orientation: 'portrait'`, `theme_color` and `background_color` matching the app's dark charcoal/amber palette, and an `icons` array covering sizes 48, 72, 96, 128, 144, 152, 192, 384, and 512 pixels — including at least one entry with `purpose: 'maskable'` for the 192×192 and 512×512 sizes pointing to generated icon assets in `frontend/public/assets/generated/`.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-service-worker-registration-script-to-frontend-index-html-or-frontend-src-main-tsx-via-a-registration-helper-that-registers-sw-js-if-the-browser-supports-service-workers-create-a-minimal-frontend-public-sw-js-that-caches-the-app-shell-index-html-main-js-css-bundles-on-install-and-serves-them-from-cache-when-offline-ensuring-the-app-meets-the-pwa-installability-criteria-required-by-the-play-store-via-twa",
+      "title": "Add a service worker registration script to `frontend/index.html` (or `frontend/src/main.tsx` via a registration helper) that registers `/sw.js` if the browser supports service workers. Create a minimal `frontend/public/sw.js` that caches the app shell (index.html, main JS/CSS bundles) on install and serves them from cache when offline, ensuring the app meets the PWA installability criteria required by the Play Store via TWA.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-green-red-daily-hours-color-indicator-threshold-logic-throughout-the-app-frontend-src-pages-dailyentry-tsx-frontend-src-pages-dashboard-tsx-today-tab-and-dashboard-week-day-rows-for-halfdayfirsthalf-leave-entries-use-4h-30m-270-minutes-as-the-green-red-threshold-instead-of-the-full-day-8h-30m-for-halfdaysecondhalf-leave-entries-use-4h-00m-240-minutes-as-the-threshold-for-noleave-regular-working-days-keep-the-existing-8h-30m-threshold-full-day-leave-entries-must-never-show-a-red-indicator-regardless-of-hours-the-surplus-shortfall-appended-value-e-g-0h-30m-or-0h-40m-must-also-be-computed-relative-to-the-correct-per-leave-type-threshold",
+      "title": "Fix the green/red daily hours color indicator threshold logic throughout the app (`frontend/src/pages/DailyEntry.tsx`, `frontend/src/pages/Dashboard.tsx` Today tab, and Dashboard Week day rows). For `halfDayFirstHalf` leave entries, use 4h 30m (270 minutes) as the green/red threshold instead of the full-day 8h 30m. For `halfDaySecondHalf` leave entries, use 4h 00m (240 minutes) as the threshold. For `noLeave` (regular working days), keep the existing 8h 30m threshold. Full-day leave entries must never show a red indicator regardless of hours. The surplus/shortfall appended value (e.g., '+0h 30m' or '−0h 40m') must also be computed relative to the correct per-leave-type threshold.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -207,6 +274,38 @@
       "reqIds": [
         "REQ-23"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Update hoursCalculation.ts: First-half leave = working window 13:00→clampedSwipeOut, no breakfast bonus, no lunch deduction, 4h30m target reduction. Second-half leave = working window clampedSwipeIn→12:30 (plus extra after 13:00), breakfast bonus applies, no lunch deduction, 4h00m target reduction.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Fix color indicator logic for half-day leave days: use the reduced half-day target as the green/red threshold. First-Half Leave threshold = 4h 30m (green if hours ≥ 4h30m, red if less). Second-Half Leave threshold = 4h 00m (green if hours ≥ 4h00m, red if less). Do not compare against the full 8h 30m daily target for these leave types.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Fix the green/red color indicator logic for half-day leave days throughout the app (Daily Entry inline display, Dashboard Today tab, and Dashboard Week day rows). For First-Half Leave days, use 4h 30m as the threshold: display hours in green if calculated hours ≥ 4h 30m, and in red if less (e.g., 3h 00m must show in red). For Second-Half Leave days, use 4h 00m as the threshold: display hours in green if calculated hours ≥ 4h 00m, and in red if less. Do not compare half-day leave entries against the full-day target of 8h 30m. Full-day leave entries continue to show no red indicator.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Fix first-half leave calculation in hoursCalculation.ts: for halfDayFirstHalf entries, net hours = clampedSwipeOut − 13:00 (e.g., 13:00→16:00 = 3h 00m). No breakfast bonus, no lunch deduction. Effective window always starts at 13:00 regardless of actual swipe-in.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Update PWA manifest and app icons to make SwipeTrack Pro Play Store-ready: full manifest.json with proper name, theme, standalone display mode, orientation, start URL; full icon set (48px–512px including 192 and 512), maskable icons, Apple Touch Icons, splash screen/theme-color meta tags in index.html, and service worker registration check.",
+      "reqIds": [],
       "status": "pending"
     }
   ],

@@ -1,58 +1,91 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Apple-style full-screen calendar overlay with 40% transparency + deploy",
+  "title": "PWA Manifest, App Icons, and Half-Day Color Indicator Fixes",
   "requirements": [
     {
-      "id": "REQ-22",
-      "summary": "Implement an Apple-style full-screen calendar overlay with 40% transparent backdrop for the date picker in Daily Entry screen",
+      "id": "REQ-29",
+      "summary": "Add PWA manifest link, theme-color meta tag, Apple mobile web app meta tags, and Apple touch icon links to index.html",
       "acceptanceCriteria": [
-        "Tapping the date input in Daily Entry opens a full-screen overlay",
-        "The overlay backdrop has exactly 40% opacity (transparent/frosted appearance)",
-        "The calendar card (grid container) has a solid opaque surface so text is readable",
-        "Month grid is large, filling most of the screen width",
-        "Weekday headers are displayed in a muted, minimal style",
-        "Today's date has a subtle indicator (e.g., dot or ring)",
-        "The selected date has a filled-circle highlight consistent with Apple Calendar aesthetic",
-        "Overlay opens with a smooth fade + slide-up animation",
-        "Overlay closes with a matching reverse animation",
-        "Tapping outside the calendar card dismisses the overlay",
-        "Swiping down on the overlay dismisses it",
-        "The selected date is correctly applied to the date field in the form after selection",
-        "Works correctly in both light mode and dark mode"
+        "`<link rel='manifest'>` tag is present in `<head>`",
+        "theme-color meta tag is present with the amber/charcoal app color",
+        "apple-mobile-web-app-capable and apple-mobile-web-app-status-bar-style meta tags are present",
+        "Apple touch icon links pointing to generated icon assets are present"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/AppleCalendarOverlay.tsx",
-          "operation": "create",
-          "description": "Create a new Apple-style full-screen calendar overlay component. The component receives selectedDate, onSelectDate, and onClose props. Render a full-screen fixed-position overlay with a 40% transparent backdrop (bg-black/40 backdrop-blur-sm). Within the overlay, center a solid opaque calendar card with rounded corners and shadow. The calendar card displays: a month header with navigation arrows, muted weekday labels (S M T W T F S) in uppercase small text, and a grid of day cells. Each day cell uses clean minimal typography. Today's date shows a subtle ring indicator. The selected date has a filled-circle highlight. Include smooth CSS transitions for fade-in/slide-up on mount and fade-out/slide-down on unmount. Handle click-outside-card to call onClose. Implement swipe-down gesture detection (touch events) on the overlay to dismiss. Ensure full readability in both light and dark modes by applying appropriate text colors and card backgrounds via Tailwind CSS and CSS custom properties."
-        },
-        {
-          "path": "frontend/src/pages/DailyEntry.tsx",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Replace the existing date input with a read-only text field styled to look tappable. Add state to track whether the AppleCalendarOverlay is open. When the date field is clicked, set overlay open state to true. Import and render the AppleCalendarOverlay component conditionally when open. Pass the current selectedDate, an onSelectDate handler that updates the form date and closes the overlay, and an onClose handler that sets overlay open to false. Ensure the overlay does not interfere with existing form state or offline sync logic. Verify that the date field correctly displays the selected date after selection."
-        },
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Add keyframe animations for the calendar overlay: @keyframes fadeIn (opacity 0 to 1), @keyframes fadeOut (opacity 1 to 0), @keyframes slideUp (translateY 20px to 0), @keyframes slideDown (translateY 0 to 20px). Define utility classes .animate-fade-in, .animate-fade-out, .animate-slide-up, .animate-slide-down with appropriate durations (300ms) and easing (ease-out). Ensure animations work smoothly in both light and dark modes."
+          "description": "Add `<link rel='manifest' href='/manifest.json'>` inside the `<head>` section. Add a `<meta name='theme-color' content='#1a1a1a'>` tag matching the app's dark charcoal background. Add Apple mobile web app meta tags: `<meta name='apple-mobile-web-app-capable' content='yes'>`, `<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent'>`, and `<meta name='apple-mobile-web-app-title' content='SwipeTrack Pro'>`. Add Apple touch icon links for the generated icon assets at `frontend/public/assets/generated/swipetrack-apple-touch-icon.dim_180x180.png` and other iOS sizes (152×152, 120×120) by referencing the generated 192×192 icon file path with appropriate sizes attribute."
         }
       ]
     },
     {
-      "id": "REQ-23",
-      "summary": "Deploy the updated SwipeTrack Pro frontend with the new Apple-style calendar overlay to the Internet Computer mainnet",
+      "id": "REQ-30",
+      "summary": "Create a PWA-compliant Web App Manifest with proper metadata and full icon set including maskable variants",
       "acceptanceCriteria": [
-        "The updated frontend is successfully deployed to the Internet Computer mainnet",
-        "The live canister URL serves the new build with the Apple-style calendar overlay",
-        "The backend canister remains functional and unchanged",
-        "No regressions in existing features post-deployment"
+        "`frontend/public/manifest.json` exists and is valid JSON",
+        "All required manifest fields (name, short_name, start_url, display, theme_color, background_color) are present",
+        "Icons array covers all sizes from 48 to 512 including 192 and 512",
+        "At least 192×192 and 512×512 entries include `purpose: 'maskable'`",
+        "Icon paths resolve to files that exist under `frontend/public/assets/generated/`"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/public/manifest.json",
+          "operation": "create",
+          "description": "Create a Web App Manifest with `name: 'SwipeTrack Pro'`, `short_name: 'SwipeTrack'`, `description: 'Office attendance and working-hours tracker'`, `start_url: '/'`, `display: 'standalone'`, `orientation: 'portrait'`, `theme_color: '#1a1a1a'` (dark charcoal), and `background_color: '#1a1a1a'`. Add an `icons` array with entries for all generated icon files: `frontend/public/assets/generated/swipetrack-icon-48.dim_48x48.png`, `frontend/public/assets/generated/swipetrack-icon-96.dim_96x96.png`, `frontend/public/assets/generated/swipetrack-icon-144.dim_144x144.png`, `frontend/public/assets/generated/swipetrack-icon-192.dim_192x192.png` (with `purpose: 'maskable any'`), and `frontend/public/assets/generated/swipetrack-icon-maskable.dim_512x512.png` (with `purpose: 'maskable any'`). Also include standard icon entries for 72, 128, 152, 384, and 512 pixel sizes using the appropriate generated assets or the base 512×512 icon. Use `/assets/generated/` as the src path prefix for icon entries to match the public directory structure."
+        }
+      ]
+    },
+    {
+      "id": "REQ-31",
+      "summary": "Register a service worker and create a minimal offline-capable service worker script",
+      "acceptanceCriteria": [
+        "Service worker is registered on app load without errors in the browser console",
+        "App shell resources are cached on first load",
+        "App loads from cache when network is unavailable",
+        "Chrome DevTools Application tab shows the service worker as active"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/main.tsx",
           "operation": "modify",
-          "description": "Verify that the app correctly imports and renders all routes including DailyEntry with the new calendar overlay. Ensure no regressions in AuthGuard, ProfileSetup modal, or notification reminders. This step confirms the frontend build is deployment-ready and that all existing features remain functional after integrating the calendar overlay."
+          "description": "Add service worker registration logic at the end of the file (after ReactDOM.createRoot call) that checks if `'serviceWorker' in navigator`, then registers `/sw.js` with `navigator.serviceWorker.register('/sw.js')`. Wrap the registration in a conditional check for production mode or always enable it for PWA testing. Log registration success or catch and log any errors. Ensure this does not interfere with the existing Internet Identity authentication flow or ICP agent calls."
+        },
+        {
+          "path": "frontend/public/sw.js",
+          "operation": "create",
+          "description": "Create a minimal service worker script that defines a cache name (e.g., 'swipetrack-v1'), listens to the 'install' event to cache the app shell resources (index.html, main JS/CSS bundles from the build output, and the manifest.json file), and listens to the 'fetch' event to serve cached resources when offline using a cache-first strategy for navigation requests and app shell assets. Include a fallback to network for non-cached resources. Ensure the service worker activates and claims clients immediately on install."
+        }
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "summary": "Fix green/red daily hours color indicator threshold logic for half-day leave entries across DailyEntry and Dashboard pages",
+      "acceptanceCriteria": [
+        "A halfDayFirstHalf entry with 3h 00m calculated hours displays in red with '−1h 30m' shortfall",
+        "A halfDayFirstHalf entry with 4h 30m or more displays in green with surplus relative to 4h 30m",
+        "A halfDaySecondHalf entry with 4h 00m or more displays in green with surplus relative to 4h 00m",
+        "A halfDaySecondHalf entry with 3h 50m displays in red with shortfall relative to 4h 00m",
+        "Full-day leave entries show no red indicator regardless of hours value",
+        "Regular working day (noLeave) still uses 8h 30m as threshold"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/hoursCalculation.ts",
+          "operation": "modify",
+          "description": "Add a new exported helper function `getTargetHoursForLeaveType(leaveType: LeaveType): number` that returns 270 (4h 30m) for `halfDayFirstHalf`, 240 (4h 00m) for `halfDaySecondHalf`, and 510 (8h 30m) for `noLeave`. Return 0 for `fullDayLeave` to indicate no threshold check should apply. Export this function for use in UI components that display color indicators and surplus/shortfall calculations."
+        },
+        {
+          "path": "frontend/src/pages/DailyEntry.tsx",
+          "operation": "modify",
+          "description": "Update the color indicator logic that displays calculated daily hours. Import `getTargetHoursForLeaveType` from `frontend/src/utils/hoursCalculation.ts`. When rendering the calculated hours display (likely inside the component that shows total hours and the surplus/shortfall), replace the hardcoded 510-minute (8h 30m) threshold with a call to `getTargetHoursForLeaveType(currentRecord.leaveType)`. Compute surplus/shortfall as `calculatedMinutes - targetMinutes`. Apply green styling when `calculatedMinutes >= targetMinutes` and red styling when `calculatedMinutes < targetMinutes`, except for `fullDayLeave` where no red indicator should show regardless of hours (skip color logic if `leaveType === 'fullDayLeave'`)."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Update the Today tab and the Week day rows color indicator logic. Import `getTargetHoursForLeaveType` from `frontend/src/utils/hoursCalculation.ts`. In the Today tab section where calculated hours are displayed, replace the hardcoded 8h 30m threshold with `getTargetHoursForLeaveType(todayRecord.leaveType)` and adjust the surplus/shortfall and color logic accordingly (green if >= target, red if < target, no red for fullDayLeave). In the Week day rows breakdown (likely a map over daily records), apply the same logic: call `getTargetHoursForLeaveType(dayRecord.leaveType)` for each day, compute surplus/shortfall relative to that day's target, and apply green/red styling accordingly. Ensure full-day leave entries never show a red indicator."
         }
       ]
     }

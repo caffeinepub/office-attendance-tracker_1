@@ -1,16 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add an Apple-style full-screen calendar overlay to the Daily Entry date picker and deploy the updated app to production.
+**Goal:** Make SwipeTrack Pro PWA-installable by adding a manifest, service worker, and proper app icons, and fix the green/red hours indicator threshold logic for half-day leave entries.
 
 **Planned changes:**
-- Replace the existing date picker in `frontend/src/pages/DailyEntry.tsx` with a full-screen modal overlay triggered by tapping the date field
-- Overlay backdrop uses 40% opacity with a frosted-glass/blur effect; the calendar card itself has a solid opaque surface for readability
-- Calendar grid features Apple-inspired minimal typography, muted weekday headers (S M T W T F S), a subtle today indicator, and a filled-circle highlight on the selected date
-- Smooth fade + slide-up open/close CSS transition animations
-- Dismiss overlay by tapping outside the calendar card or swiping down
-- Selected date is correctly applied back to the form field
-- Overlay works in both light and dark mode
-- Deploy the updated frontend to the Internet Computer mainnet, replacing the current live deployment
+- Update `frontend/index.html` to include a PWA manifest link, theme-color meta tag (amber/charcoal palette), Apple mobile web app meta tags, and Apple touch icon links
+- Create `frontend/public/manifest.json` with all required PWA fields, icon entries for sizes 48–512px, and maskable icon entries for 192×192 and 512×512
+- Add service worker registration and create a minimal `frontend/public/sw.js` that caches the app shell and serves it offline
+- Fix the hours color indicator threshold in `DailyEntry.tsx` and `Dashboard.tsx`: use 4h 30m for `halfDayFirstHalf`, 4h 00m for `halfDaySecondHalf`, keep 8h 30m for regular days, and never show red for full-day leave
+- Update surplus/shortfall display values to be computed against the correct per-leave-type threshold
 
-**User-visible outcome:** Users on the Daily Entry screen can tap the date field to open a beautiful full-screen Apple-style calendar picker with a translucent backdrop, then select a date or dismiss with a swipe/tap — and the live production app is updated with this new experience.
+**User-visible outcome:** The app can be installed as a PWA and works offline. Half-day leave entries now show correct green/red indicators and accurate surplus/shortfall values instead of being compared against the full-day 8h 30m target.

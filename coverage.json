@@ -1,50 +1,80 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T09:43:35.856Z",
+  "generatedAt": "2026-02-25T12:12:49.473Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 1,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-22",
-        "summary": "Implement an Apple-style full-screen calendar overlay for the date picker in the Daily Entry screen (frontend/src/pages/DailyEntry.tsx). When the user taps the date field, open a full-screen modal overlay with a 40% transparent/frosted-glass background (backdrop with rgba or bg-opacity-40 blur effect). The modal must contain a large monthly calendar grid with: clean minimal Apple-inspired typography, muted weekday header labels (S M T W T F S), a subtle 'today' indicator, and an elegant filled-circle highlight on the selected day. Include smooth open/close CSS transition animations (fade + slide-up). Dismiss the overlay on swipe-down gesture or tap outside the calendar card. The calendar card itself should have a solid (non-transparent) surface so day labels and numbers remain fully readable against the transparent backdrop.",
+        "id": "REQ-29",
+        "summary": "Update `frontend/index.html` to include a full PWA manifest link (`<link rel='manifest' href='/manifest.json'>`), theme-color meta tag matching the app's amber/charcoal palette, Apple mobile web app meta tags (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`), and Apple touch icon links for common iOS sizes (180×180, 152×152, 120×120).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/AppleCalendarOverlay.tsx",
-          "frontend/src/pages/DailyEntry.tsx",
-          "frontend/src/index.css"
+          "frontend/index.html"
         ],
         "matchedFiles": [
-          "frontend/src/components/AppleCalendarOverlay.tsx",
-          "frontend/src/pages/DailyEntry.tsx",
-          "frontend/src/index.css"
+          "frontend/index.html"
         ]
       },
       {
-        "id": "REQ-23",
-        "summary": "Deploy the updated SwipeTrack Pro application (frontend with the new Apple-style calendar overlay) to the Internet Computer mainnet/production network, replacing the current live deployment and making the update publicly accessible.",
-        "status": "missing",
+        "id": "REQ-30",
+        "summary": "Create `frontend/public/manifest.json` as a fully PWA-compliant Web App Manifest with: `name: 'SwipeTrack Pro'`, `short_name: 'SwipeTrack'`, `description: 'Office attendance and working-hours tracker'`, `start_url: '/'`, `display: 'standalone'`, `orientation: 'portrait'`, `theme_color` and `background_color` matching the app's dark charcoal/amber palette, and an `icons` array covering sizes 48, 72, 96, 128, 144, 152, 192, 384, and 512 pixels — including at least one entry with `purpose: 'maskable'` for the 192×192 and 512×512 sizes pointing to generated icon assets in `frontend/public/assets/generated/`.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/App.tsx"
+          "frontend/public/manifest.json"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/public/manifest.json"
+        ]
+      },
+      {
+        "id": "REQ-31",
+        "summary": "Add a service worker registration script to `frontend/index.html` (or `frontend/src/main.tsx` via a registration helper) that registers `/sw.js` if the browser supports service workers. Create a minimal `frontend/public/sw.js` that caches the app shell (index.html, main JS/CSS bundles) on install and serves them from cache when offline, ensuring the app meets the PWA installability criteria required by the Play Store via TWA.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/main.tsx",
+          "frontend/public/sw.js"
+        ],
+        "matchedFiles": [
+          "frontend/public/sw.js"
+        ]
+      },
+      {
+        "id": "REQ-32",
+        "summary": "Fix the green/red daily hours color indicator threshold logic throughout the app (`frontend/src/pages/DailyEntry.tsx`, `frontend/src/pages/Dashboard.tsx` Today tab, and Dashboard Week day rows). For `halfDayFirstHalf` leave entries, use 4h 30m (270 minutes) as the green/red threshold instead of the full-day 8h 30m. For `halfDaySecondHalf` leave entries, use 4h 00m (240 minutes) as the threshold. For `noLeave` (regular working days), keep the existing 8h 30m threshold. Full-day leave entries must never show a red indicator regardless of hours. The surplus/shortfall appended value (e.g., '+0h 30m' or '−0h 40m') must also be computed relative to the correct per-leave-type threshold.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/hoursCalculation.ts",
+          "frontend/src/pages/DailyEntry.tsx",
+          "frontend/src/pages/Dashboard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/hoursCalculation.ts"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/AppleCalendarOverlay.tsx",
-    "frontend/src/index.css",
-    "frontend/src/pages/DailyEntry.tsx",
+    "frontend/index.html",
+    "frontend/public/assets/generated/swipetrack-apple-touch-icon.dim_180x180.png",
+    "frontend/public/assets/generated/swipetrack-icon-144.dim_144x144.png",
+    "frontend/public/assets/generated/swipetrack-icon-192.dim_192x192.png",
+    "frontend/public/assets/generated/swipetrack-icon-48.dim_48x48.png",
+    "frontend/public/assets/generated/swipetrack-icon-96.dim_96x96.png",
+    "frontend/public/assets/generated/swipetrack-icon-maskable.dim_512x512.png",
+    "frontend/public/assets/generated/swipetrack-icon.dim_512x512.png",
+    "frontend/public/manifest.json",
+    "frontend/public/sw.js",
+    "frontend/src/utils/hoursCalculation.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

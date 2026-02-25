@@ -1,24 +1,26 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T09:43:35.853Z",
-  "summary": "REQ-22 is substantially implemented via a new AppleCalendarOverlay component and integration into DailyEntry.tsx, with CSS animations and styles in index.css. REQ-23 (deployment to Internet Computer mainnet) cannot be verified from code changes alone — no deployment scripts, dfx.json changes, canister ID updates, or CI/CD pipeline evidence are present in the diff.",
+  "generatedAt": "2026-02-25T12:12:49.468Z",
+  "summary": "The diff implements REQ-29, REQ-30, REQ-31, and REQ-32 with mostly complete coverage. REQ-29 is fully satisfied. REQ-30 is missing icon sizes 72, 128, and 384 from the manifest icons array. REQ-31 is satisfied via sw.js and main.tsx service worker registration. REQ-32 appears satisfied via the new getTargetHoursForLeaveType helper in hoursCalculation.ts.",
   "missing_requirements": [
     {
-      "id": "REQ-23",
-      "requirement": "Deploy the updated SwipeTrack Pro application to the Internet Computer mainnet/production network, replacing the current live deployment and making the update publicly accessible.",
-      "reason": "The diff contains only frontend source code changes (new component, CSS, page updates). There is no evidence of deployment artifacts, dfx deploy commands, updated canister IDs, CI/CD pipeline changes, or any other deployment-related file modifications that would indicate the app was actually deployed to the IC mainnet.",
-      "evidence": []
+      "id": "REQ-30",
+      "requirement": "Icons array must cover sizes 48, 72, 96, 128, 144, 152, 192, 384, and 512 pixels",
+      "reason": "The manifest.json only includes sizes 48, 96, 144, 180, 192, and 512. Sizes 72x72, 128x128, and 384x384 are absent from the icons array.",
+      "evidence": [
+        "frontend/public/manifest.json"
+      ]
     }
   ],
   "hallucinated_features": [],
-  "confidence": 0.82,
+  "confidence": 0.9,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/AppleCalendarOverlay.tsx",
-    "frontend/src/index.css",
-    "frontend/src/pages/DailyEntry.tsx",
+    "frontend/index.html",
+    "frontend/public/manifest.json",
+    "frontend/public/sw.js",
+    "frontend/src/utils/hoursCalculation.ts",
     "project_state.json"
   ]
 }

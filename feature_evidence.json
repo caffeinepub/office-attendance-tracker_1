@@ -2,12 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-implement-an-apple-style-full-screen-calendar-overlay-for-the-date-picker-in-the-daily-entry-screen-frontend-src-pages-dailyentry-tsx-when-the-user-taps-the-date-field-open-a-full-screen-modal-overlay-with-a-40-transparent-frosted-glass-background-backdrop-with-rgba-or-bg-opacity-40-blur-effect-the-modal-must-contain-a-large-monthly-calendar-grid-with-clean-minimal-apple-inspired-typography-muted-weekday-header-labels-s-m-t-w-t-f-s-a-subtle-today-indicator-and-an-elegant-filled-circle-highlight-on-the-selected-day-include-smooth-open-close-css-transition-animations-fade-slide-up-dismiss-the-overlay-on-swipe-down-gesture-or-tap-outside-the-calendar-card-the-calendar-card-itself-should-have-a-solid-non-transparent-surface-so-day-labels-and-numbers-remain-fully-readable-against-the-transparent-backdrop",
-      "featureTitle": "Implement an Apple-style full-screen calendar overlay for the date picker in the Daily Entry screen (frontend/src/pages/DailyEntry.tsx). When the user taps the date field, open a full-screen modal overlay with a 40% transparent/frosted-glass background (backdrop with rgba or bg-opacity-40 blur effect). The modal must contain a large monthly calendar grid with: clean minimal Apple-inspired typography, muted weekday header labels (S M T W T F S), a subtle 'today' indicator, and an elegant filled-circle highlight on the selected day. Include smooth open/close CSS transition animations (fade + slide-up). Dismiss the overlay on swipe-down gesture or tap outside the calendar card. The calendar card itself should have a solid (non-transparent) surface so day labels and numbers remain fully readable against the transparent backdrop.",
+      "featureId": "feature-update-frontend-index-html-to-include-a-full-pwa-manifest-link-link-rel-manifest-href-manifest-json-theme-color-meta-tag-matching-the-app-s-amber-charcoal-palette-apple-mobile-web-app-meta-tags-apple-mobile-web-app-capable-apple-mobile-web-app-status-bar-style-apple-mobile-web-app-title-and-apple-touch-icon-links-for-common-ios-sizes-180-180-152-152-120-120",
+      "featureTitle": "Update `frontend/index.html` to include a full PWA manifest link (`<link rel='manifest' href='/manifest.json'>`), theme-color meta tag matching the app's amber/charcoal palette, Apple mobile web app meta tags (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`), and Apple touch icon links for common iOS sizes (180×180, 152×152, 120×120).",
       "files": [
-        "frontend/src/components/AppleCalendarOverlay.tsx",
-        "frontend/src/index.css",
-        "frontend/src/pages/DailyEntry.tsx"
+        "frontend/index.html"
       ],
       "components": [
         "authorization@4.0.0",
@@ -19,7 +17,67 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-22"
+        "REQ-29"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-frontend-public-manifest-json-as-a-fully-pwa-compliant-web-app-manifest-with-name-swipetrack-pro-short-name-swipetrack-description-office-attendance-and-working-hours-tracker-start-url-display-standalone-orientation-portrait-theme-color-and-background-color-matching-the-app-s-dark-charcoal-amber-palette-and-an-icons-array-covering-sizes-48-72-96-128-144-152-192-384-and-512-pixels-including-at-least-one-entry-with-purpose-maskable-for-the-192-192-and-512-512-sizes-pointing-to-generated-icon-assets-in-frontend-public-assets-generated",
+      "featureTitle": "Create `frontend/public/manifest.json` as a fully PWA-compliant Web App Manifest with: `name: 'SwipeTrack Pro'`, `short_name: 'SwipeTrack'`, `description: 'Office attendance and working-hours tracker'`, `start_url: '/'`, `display: 'standalone'`, `orientation: 'portrait'`, `theme_color` and `background_color` matching the app's dark charcoal/amber palette, and an `icons` array covering sizes 48, 72, 96, 128, 144, 152, 192, 384, and 512 pixels — including at least one entry with `purpose: 'maskable'` for the 192×192 and 512×512 sizes pointing to generated icon assets in `frontend/public/assets/generated/`.",
+      "files": [
+        "frontend/public/manifest.json"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-30"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-service-worker-registration-script-to-frontend-index-html-or-frontend-src-main-tsx-via-a-registration-helper-that-registers-sw-js-if-the-browser-supports-service-workers-create-a-minimal-frontend-public-sw-js-that-caches-the-app-shell-index-html-main-js-css-bundles-on-install-and-serves-them-from-cache-when-offline-ensuring-the-app-meets-the-pwa-installability-criteria-required-by-the-play-store-via-twa",
+      "featureTitle": "Add a service worker registration script to `frontend/index.html` (or `frontend/src/main.tsx` via a registration helper) that registers `/sw.js` if the browser supports service workers. Create a minimal `frontend/public/sw.js` that caches the app shell (index.html, main JS/CSS bundles) on install and serves them from cache when offline, ensuring the app meets the PWA installability criteria required by the Play Store via TWA.",
+      "files": [
+        "frontend/public/sw.js"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-31"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-the-green-red-daily-hours-color-indicator-threshold-logic-throughout-the-app-frontend-src-pages-dailyentry-tsx-frontend-src-pages-dashboard-tsx-today-tab-and-dashboard-week-day-rows-for-halfdayfirsthalf-leave-entries-use-4h-30m-270-minutes-as-the-green-red-threshold-instead-of-the-full-day-8h-30m-for-halfdaysecondhalf-leave-entries-use-4h-00m-240-minutes-as-the-threshold-for-noleave-regular-working-days-keep-the-existing-8h-30m-threshold-full-day-leave-entries-must-never-show-a-red-indicator-regardless-of-hours-the-surplus-shortfall-appended-value-e-g-0h-30m-or-0h-40m-must-also-be-computed-relative-to-the-correct-per-leave-type-threshold",
+      "featureTitle": "Fix the green/red daily hours color indicator threshold logic throughout the app (`frontend/src/pages/DailyEntry.tsx`, `frontend/src/pages/Dashboard.tsx` Today tab, and Dashboard Week day rows). For `halfDayFirstHalf` leave entries, use 4h 30m (270 minutes) as the green/red threshold instead of the full-day 8h 30m. For `halfDaySecondHalf` leave entries, use 4h 00m (240 minutes) as the threshold. For `noLeave` (regular working days), keep the existing 8h 30m threshold. Full-day leave entries must never show a red indicator regardless of hours. The surplus/shortfall appended value (e.g., '+0h 30m' or '−0h 40m') must also be computed relative to the correct per-leave-type threshold.",
+      "files": [
+        "frontend/src/utils/hoursCalculation.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-32"
       ],
       "confidence": "high"
     }
