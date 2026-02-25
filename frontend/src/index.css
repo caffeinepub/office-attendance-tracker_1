@@ -195,4 +195,71 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
+
+  /* ── Apple Calendar Overlay ─────────────────────────────────────────────── */
+
+  /* Backdrop: full-screen fixed, 40% transparent black */
+  .apple-cal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+    /* Prevent body scroll when open */
+    touch-action: none;
+  }
+
+  .apple-cal-overlay--visible {
+    opacity: 1;
+  }
+
+  /* Calendar card: solid opaque surface, slides up from bottom */
+  .apple-cal-card {
+    width: 100%;
+    max-width: 480px;
+    background-color: oklch(var(--card));
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18), 0 -2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+    /* Ensure card is always fully opaque */
+    opacity: 1;
+  }
+
+  .apple-cal-card--visible {
+    transform: translateY(0);
+  }
+
+  /* Selected day: filled circle with primary color */
+  .apple-cal-selected {
+    background-color: oklch(var(--primary));
+    color: oklch(var(--primary-foreground));
+  }
+
+  .apple-cal-selected:hover {
+    background-color: oklch(var(--primary) / 0.9);
+  }
+
+  /* Today ring: subtle outline when not selected */
+  .apple-cal-today {
+    color: oklch(var(--primary));
+    font-weight: 700;
+  }
+
+  .apple-cal-today:hover {
+    background-color: oklch(var(--secondary));
+  }
+
+  /* Dark mode card background */
+  .dark .apple-cal-card {
+    background-color: oklch(var(--card));
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3);
+  }
 }

@@ -1,45 +1,58 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add 30-minute lunch deduction to working-hour calculation",
+  "title": "Apple-style full-screen calendar overlay with 40% transparency + deploy",
   "requirements": [
     {
-      "id": "REQ-15",
-      "summary": "Update working-hour calculation logic to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave), ensuring half-day and full-day leave entries are not affected",
+      "id": "REQ-22",
+      "summary": "Implement an Apple-style full-screen calendar overlay with 40% transparent backdrop for the date picker in Daily Entry screen",
       "acceptanceCriteria": [
-        "For a No Leave day, swipe-in 07:00 and swipe-out 16:00 (no breakfast) yields exactly 8h 30m net hours.",
-        "For a No Leave day, swipe-in 07:00 and swipe-out 16:00 with breakfast yields exactly 9h 00m net hours.",
-        "Half-Day First Half entries do not have 30 minutes deducted for lunch.",
-        "Half-Day Second Half entries do not have 30 minutes deducted for lunch.",
-        "Full-Day Leave entries still return 0 daily hours.",
-        "Smart Swipe-Out Prediction and Dashboard/Analytics screens reflect the updated net hours (lunch deduction applied) correctly.",
-        "All existing unit-level logic for clamping, breakfast bonus, and leave reductions remains intact."
+        "Tapping the date input in Daily Entry opens a full-screen overlay",
+        "The overlay backdrop has exactly 40% opacity (transparent/frosted appearance)",
+        "The calendar card (grid container) has a solid opaque surface so text is readable",
+        "Month grid is large, filling most of the screen width",
+        "Weekday headers are displayed in a muted, minimal style",
+        "Today's date has a subtle indicator (e.g., dot or ring)",
+        "The selected date has a filled-circle highlight consistent with Apple Calendar aesthetic",
+        "Overlay opens with a smooth fade + slide-up animation",
+        "Overlay closes with a matching reverse animation",
+        "Tapping outside the calendar card dismisses the overlay",
+        "Swiping down on the overlay dismisses it",
+        "The selected date is correctly applied to the date field in the form after selection",
+        "Works correctly in both light mode and dark mode"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/hoursCalculation.ts",
-          "operation": "modify",
-          "description": "Update the calculateDailyHours function to apply a 30-minute lunch deduction for regular working days (leaveType = #noLeave). Modify the net hours formula to: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Ensure the lunch deduction is only applied when leaveType is #noLeave and never for half-day leave entries (#halfDayFirstHalf, #halfDaySecondHalf) or full-day leave entries (#fullDayLeave). Preserve all existing logic for time parsing, work window clamping (7:00–18:30), breakfast bonus (+30 min), and leave-type-specific reductions. Add inline comments explaining the lunch deduction logic and its conditional application based on leave type."
+          "path": "frontend/src/components/AppleCalendarOverlay.tsx",
+          "operation": "create",
+          "description": "Create a new Apple-style full-screen calendar overlay component. The component receives selectedDate, onSelectDate, and onClose props. Render a full-screen fixed-position overlay with a 40% transparent backdrop (bg-black/40 backdrop-blur-sm). Within the overlay, center a solid opaque calendar card with rounded corners and shadow. The calendar card displays: a month header with navigation arrows, muted weekday labels (S M T W T F S) in uppercase small text, and a grid of day cells. Each day cell uses clean minimal typography. Today's date shows a subtle ring indicator. The selected date has a filled-circle highlight. Include smooth CSS transitions for fade-in/slide-up on mount and fade-out/slide-down on unmount. Handle click-outside-card to call onClose. Implement swipe-down gesture detection (touch events) on the overlay to dismiss. Ensure full readability in both light and dark modes by applying appropriate text colors and card backgrounds via Tailwind CSS and CSS custom properties."
         },
         {
-          "path": "frontend/src/components/SmartSwipeOutPrediction.tsx",
+          "path": "frontend/src/pages/DailyEntry.tsx",
           "operation": "modify",
-          "description": "Review and verify that the smart swipe-out prediction correctly reflects the updated working-hour calculation with the 30-minute lunch deduction. The component uses calculateTotalHoursForRange and calculateDailyHours indirectly, so ensure the predicted swipe-out time accounts for the lunch break when calculating remaining hours to reach the weekly target. No logic changes should be needed if hoursCalculation.ts is updated correctly, but add a test scenario comment to document that lunch deduction is factored into predictions for #noLeave days."
+          "description": "Replace the existing date input with a read-only text field styled to look tappable. Add state to track whether the AppleCalendarOverlay is open. When the date field is clicked, set overlay open state to true. Import and render the AppleCalendarOverlay component conditionally when open. Pass the current selectedDate, an onSelectDate handler that updates the form date and closes the overlay, and an onClose handler that sets overlay open to false. Ensure the overlay does not interfere with existing form state or offline sync logic. Verify that the date field correctly displays the selected date after selection."
         },
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Review and verify that the Dashboard page correctly displays weekly and monthly summary stats using the updated working-hour calculation with lunch deduction. The page uses calculateTotalHoursForRange which depends on calculateDailyHours, so ensure weekly progress and on-track status reflect the new net hours formula. No code changes should be required if hoursCalculation.ts is updated correctly, but add a verification comment confirming lunch deduction is included in displayed hours for regular working days."
-        },
+          "description": "Add keyframe animations for the calendar overlay: @keyframes fadeIn (opacity 0 to 1), @keyframes fadeOut (opacity 1 to 0), @keyframes slideUp (translateY 20px to 0), @keyframes slideDown (translateY 0 to 20px). Define utility classes .animate-fade-in, .animate-fade-out, .animate-slide-up, .animate-slide-down with appropriate durations (300ms) and easing (ease-out). Ensure animations work smoothly in both light and dark modes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "summary": "Deploy the updated SwipeTrack Pro frontend with the new Apple-style calendar overlay to the Internet Computer mainnet",
+      "acceptanceCriteria": [
+        "The updated frontend is successfully deployed to the Internet Computer mainnet",
+        "The live canister URL serves the new build with the Apple-style calendar overlay",
+        "The backend canister remains functional and unchanged",
+        "No regressions in existing features post-deployment"
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/pages/Analytics.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Review and verify that the Analytics page bar charts and summary statistics correctly reflect the updated working-hour calculation with lunch deduction. The page uses calculateDailyHours and calculateTotalHoursForRange to generate chart data and compute average/highest/lowest hours, so ensure all displayed metrics include the 30-minute lunch deduction for #noLeave days. No code changes should be required if hoursCalculation.ts is updated correctly, but add a verification comment confirming lunch deduction is factored into all analytics metrics."
-        },
-        {
-          "path": "frontend/src/pages/Export.tsx",
-          "operation": "modify",
-          "description": "Review and verify that the Export page generates CSV/TSV/XLSX files with attendance records showing the updated daily hours including the 30-minute lunch deduction. The page uses calculateDailyHours to compute hours for each record, so ensure exported data reflects the new net hours formula for #noLeave days. No code changes should be required if hoursCalculation.ts is updated correctly, but add a verification comment confirming exported hours include lunch deduction for regular working days."
+          "description": "Verify that the app correctly imports and renders all routes including DailyEntry with the new calendar overlay. Ensure no regressions in AuthGuard, ProfileSetup modal, or notification reminders. This step confirms the frontend build is deployment-ready and that all existing features remain functional after integrating the calendar overlay."
         }
       ]
     }

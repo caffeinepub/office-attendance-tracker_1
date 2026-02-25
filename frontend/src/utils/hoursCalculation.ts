@@ -10,6 +10,7 @@ export const LUNCH_DEDUCTION = 30; // 30 minutes – deducted on regular working
 export const FULL_DAY_LEAVE_REDUCTION = 8 * 60 + 30; // 8h 30m
 export const HALF_DAY_FIRST_REDUCTION = 4 * 60 + 30; // 4h 30m
 export const HALF_DAY_SECOND_REDUCTION = 4 * 60; // 4h 00m
+export const DAILY_TARGET_MINUTES = 8 * 60 + 30; // 8h 30m – standard daily target
 
 export type LeaveTypeStr = 'noLeave' | 'halfDayFirstHalf' | 'halfDaySecondHalf' | 'fullDayLeave';
 
@@ -47,7 +48,7 @@ export function formatHoursDisplay(totalMinutes: number): string {
   return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
-/** Format minutes to "H:MM AM/PM" */
+/** Format total minutes to "H:MM AM/PM" */
 export function formatTimeAmPm(minutes: number): string {
   const h24 = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -92,7 +93,10 @@ export function applyLeaveTimeAdjustments(
  *
  * Rules:
  * - fullDayLeave: 0 minutes.
- * - halfDayFirstHalf / halfDaySecondHalf: raw clamped hours, no lunch deduction.
+ * - halfDayFirstHalf: raw clamped hours from swipeIn, no lunch deduction.
+ * - halfDaySecondHalf:
+ *     If swipeOut > 13:00, extra hours = (clampedSwipeOut − 13:00) + breakfast bonus if applicable.
+ *     If swipeOut ≤ 13:00, 0 extra hours (employee left before/at 13:00).
  * - noLeave (regular working day):
  *     net = (clampedOut − clampedIn) − LUNCH_DEDUCTION (30 min) + BREAKFAST_BONUS (30 min, if applicable)
  *
@@ -101,6 +105,9 @@ export function applyLeaveTimeAdjustments(
  *
  * Example: swipeIn=07:00, swipeOut=16:00, breakfast=true, noLeave
  *   raw = 9h 00m, net = 9h 00m − 30m lunch + 30m breakfast = 9h 00m ✓
+ *
+ * Example: halfDaySecondHalf, swipeOut=15:00, no breakfast
+ *   extra = 15:00 − 13:00 = 2h 00m ✓
  */
 export function calculateDailyHours(record: DayRecord): number {
   if (record.leaveType === 'fullDayLeave') return 0;
@@ -111,6 +118,23 @@ export function calculateDailyHours(record: DayRecord): number {
   let swipeOutMins = parseTime(record.swipeOut);
 
   if (swipeOutMins <= swipeInMins) return 0;
+
+  const ONE_PM = 13 * 60; // 13:00 in minutes
+
+  // Special handling for halfDaySecondHalf
+  if (record.leaveType === 'halfDaySecondHalf') {
+    if (swipeOutMins <= ONE_PM) {
+      // Worked up to 13:00 or earlier — no credited hours
+      return 0;
+    }
+    // Worked after 13:00 — credit hours from 13:00 onwards
+    const effectiveOut = clampToWorkingWindow(swipeOutMins);
+    let hours = Math.max(0, effectiveOut - ONE_PM);
+    if (record.breakfastAtOffice) {
+      hours += BREAKFAST_BONUS;
+    }
+    return Math.max(0, hours);
+  }
 
   // Apply leave time adjustments (half-day boundary corrections)
   const adjusted = applyLeaveTimeAdjustments(swipeInMins, swipeOutMins, record.leaveType);
@@ -132,7 +156,7 @@ export function calculateDailyHours(record: DayRecord): number {
       hours += BREAKFAST_BONUS;
     }
   }
-  // Half-day leaves: no lunch deduction, no breakfast bonus adjustment
+  // halfDayFirstHalf: no lunch deduction, no breakfast bonus adjustment
 
   // Ensure we never return negative minutes
   return Math.max(0, hours);
@@ -303,4 +327,61 @@ export function getWeekRange(date: Date): { start: string; end: string } {
     start: formatDateKey(getWeekStart(date)),
     end: formatDateKey(getWeekEnd(date)),
   };
+}
+
+/**
+ * Returns colour indicator info for a daily hours value.
+ *
+ * - fullDayLeave → neutral (no indicator)
+ * - weekend with no record → neutral (no indicator)
+ * - hours >= DAILY_TARGET_MINUTES (8h 30m) → green with surplus
+ * - hours < DAILY_TARGET_MINUTES on a non-full-day-leave day → red with shortfall
+ */
+export interface DailyHoursIndicator {
+  color: 'green' | 'red' | 'neutral';
+  hoursDisplay: string;
+  diffDisplay: string | null; // e.g. "+0h 15m" or "-0h 40m", null for neutral
+  diffMinutes: number; // positive = surplus, negative = shortfall
+}
+
+export function getDailyHoursIndicator(
+  dailyMinutes: number,
+  leaveType: LeaveTypeStr,
+  isWeekendDay: boolean,
+  hasRecord: boolean
+): DailyHoursIndicator {
+  const hoursDisplay = formatHoursDisplay(dailyMinutes);
+
+  // Full-day leave: neutral, no indicator
+  if (leaveType === 'fullDayLeave') {
+    return { color: 'neutral', hoursDisplay: '0h 00m', diffDisplay: null, diffMinutes: 0 };
+  }
+
+  // Weekend with no record: neutral
+  if (isWeekendDay && !hasRecord) {
+    return { color: 'neutral', hoursDisplay: '—', diffDisplay: null, diffMinutes: 0 };
+  }
+
+  // No record on a weekday: neutral placeholder
+  if (!hasRecord) {
+    return { color: 'neutral', hoursDisplay: '—', diffDisplay: null, diffMinutes: 0 };
+  }
+
+  const diff = dailyMinutes - DAILY_TARGET_MINUTES;
+
+  if (diff >= 0) {
+    return {
+      color: 'green',
+      hoursDisplay,
+      diffDisplay: `+${formatHoursDisplay(diff)}`,
+      diffMinutes: diff,
+    };
+  } else {
+    return {
+      color: 'red',
+      hoursDisplay,
+      diffDisplay: `-${formatHoursDisplay(Math.abs(diff))}`,
+      diffMinutes: diff,
+    };
+  }
 }

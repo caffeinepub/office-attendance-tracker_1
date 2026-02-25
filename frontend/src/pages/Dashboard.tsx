@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { TrendingUp, TrendingDown, Clock, Calendar, BarChart2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -12,10 +12,12 @@ import {
   formatHoursDisplay,
   formatDateKey,
   getWeekRange,
+  getWeekStart,
   getMonthRange,
   isWeekendDate,
   DEFAULT_WEEKLY_TARGET,
   getLeaveTypeLabel,
+  getDailyHoursIndicator,
 } from '../utils/hoursCalculation';
 import { useGetRecordsByDateRange } from '../hooks/useQueries';
 
@@ -56,6 +58,8 @@ function StatCard({ label, value, sub, icon, accent }: StatCardProps) {
   );
 }
 
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export default function Dashboard() {
   const today = new Date();
   const todayKey = formatDateKey(today);
@@ -77,7 +81,6 @@ export default function Dashboard() {
     const progress = target > 0 ? Math.min(100, (completed / target) * 100) : 0;
 
     // Determine if on track: compare completed vs expected by today
-    const weekStart = new Date(weekRange.start);
     const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Mon=1, Sun=7
     const workdaysPassed = Math.min(dayOfWeek, 5); // Mon-Fri
     const expectedByNow = (target / 5) * workdaysPassed;
@@ -90,6 +93,23 @@ export default function Dashboard() {
 
     return { target, completed, remaining, deficit, progress, onTrack, weekendHours };
   }, [weekRecords, weekRange.start, today]);
+
+  // Build day-by-day week breakdown (Mon–Sun)
+  const weekDays = useMemo(() => {
+    const weekStart = getWeekStart(today);
+    return DAY_LABELS.map((label, i) => {
+      const date = addDays(weekStart, i);
+      const dateKey = formatDateKey(date);
+      const isWeekend = i >= 5; // Sat=5, Sun=6
+      const record = weekRecords.find(r => r.date === dateKey);
+      const calcRecord = record ? toCalcRecord(record) : null;
+      const hours = calcRecord ? calculateDailyHours(calcRecord) : 0;
+      const leaveType = calcRecord ? calcRecord.leaveType : 'noLeave';
+      const indicator = getDailyHoursIndicator(hours, leaveType, isWeekend, !!record);
+      const isToday = dateKey === todayKey;
+      return { label, date, dateKey, isWeekend, record, hours, indicator, isToday };
+    });
+  }, [weekRecords, today, todayKey]);
 
   // Month calculations
   const monthData = useMemo(() => {
@@ -106,8 +126,9 @@ export default function Dashboard() {
     const calc = toCalcRecord(todayRecord);
     const hours = calculateDailyHours(calc);
     const coreViolation = checkCoreHoursViolation(calc);
-    return { hours, coreViolation, record: todayRecord };
-  }, [todayRecord]);
+    const indicator = getDailyHoursIndicator(hours, calc.leaveType, isWeekendDate(todayKey), true);
+    return { hours, coreViolation, record: todayRecord, indicator };
+  }, [todayRecord, todayKey]);
 
   return (
     <div className="page-enter px-4 py-5 space-y-4">
@@ -144,9 +165,24 @@ export default function Dashboard() {
                     {todayData.coreViolation ? 'Core Hours ⚠️' : 'Core Hours ✓'}
                   </span>
                 </div>
-                <p className="text-5xl font-display font-bold text-primary">
-                  {formatHoursDisplay(todayData.hours)}
-                </p>
+                <div className="flex items-end gap-3">
+                  <p className={`text-5xl font-display font-bold ${
+                    todayData.indicator.color === 'green'
+                      ? 'text-success'
+                      : todayData.indicator.color === 'red'
+                      ? 'text-destructive'
+                      : 'text-primary'
+                  }`}>
+                    {todayData.indicator.hoursDisplay}
+                  </p>
+                  {todayData.indicator.diffDisplay && (
+                    <span className={`text-base font-semibold mb-1 ${
+                      todayData.indicator.color === 'green' ? 'text-success' : 'text-destructive'
+                    }`}>
+                      {todayData.indicator.diffDisplay}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Swipe times */}
@@ -263,6 +299,66 @@ export default function Dashboard() {
                   value={weekData.deficit > 0 ? formatHoursDisplay(weekData.deficit) : '—'}
                   icon={<TrendingDown className="w-5 h-5 text-muted-foreground" />}
                 />
+              </div>
+
+              {/* Day-by-day breakdown */}
+              <div className="app-card p-4 space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Day-by-Day</p>
+                {weekDays.map(day => (
+                  <div
+                    key={day.dateKey}
+                    className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
+                      day.isToday
+                        ? 'bg-primary/10 border border-primary/20'
+                        : day.isWeekend
+                        ? 'bg-secondary/50'
+                        : 'hover:bg-secondary/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold w-8 ${
+                        day.isToday ? 'text-primary' : day.isWeekend ? 'text-muted-foreground' : 'text-foreground'
+                      }`}>
+                        {day.label}
+                      </span>
+                      <span className={`text-xs ${day.isToday ? 'text-primary/70' : 'text-muted-foreground'}`}>
+                        {format(day.date, 'd')}
+                      </span>
+                      {day.isToday && (
+                        <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                          Today
+                        </span>
+                      )}
+                      {day.isWeekend && (
+                        <span className="text-xs text-muted-foreground/60">Weekend</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {day.record ? (
+                        <>
+                          <span className={`text-sm font-bold ${
+                            day.indicator.color === 'green'
+                              ? 'text-success'
+                              : day.indicator.color === 'red'
+                              ? 'text-destructive'
+                              : 'text-muted-foreground'
+                          }`}>
+                            {day.indicator.hoursDisplay}
+                          </span>
+                          {day.indicator.diffDisplay && (
+                            <span className={`text-xs font-semibold ${
+                              day.indicator.color === 'green' ? 'text-success' : 'text-destructive'
+                            }`}>
+                              {day.indicator.diffDisplay}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-sm text-muted-foreground/50">—</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Weekend compensation */}

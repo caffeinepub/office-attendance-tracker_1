@@ -5,8 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { AttendanceRecord, LeaveType } from '../backend';
@@ -20,11 +18,14 @@ import {
   calculateWeeklyTarget,
   isWeekendDate,
   getLeaveTypeLabel,
+  getDailyHoursIndicator,
+  parseTime,
 } from '../utils/hoursCalculation';
 import { useGetRecord, useSaveRecord, useGetRecordsByDateRange } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import SmartSwipeOutPrediction from '../components/SmartSwipeOutPrediction';
+import AppleCalendarOverlay from '../components/AppleCalendarOverlay';
 
 const LEAVE_OPTIONS: { value: LeaveType; label: string }[] = [
   { value: LeaveType.noLeave, label: 'No Leave' },
@@ -36,6 +37,9 @@ const LEAVE_OPTIONS: { value: LeaveType; label: string }[] = [
 function leaveTypeToStr(lt: LeaveType): 'noLeave' | 'halfDayFirstHalf' | 'halfDaySecondHalf' | 'fullDayLeave' {
   return lt as unknown as 'noLeave' | 'halfDayFirstHalf' | 'halfDaySecondHalf' | 'fullDayLeave';
 }
+
+const ONE_PM_MINS = 13 * 60;
+const HALF_PAST_12_MINS = 12 * 60 + 30;
 
 export default function DailyEntry() {
   const today = new Date();
@@ -73,7 +77,7 @@ export default function DailyEntry() {
 
   const completedMinutesThisWeek = useMemo(() => {
     return weekRecords
-      .filter(r => r.date !== dateKey) // exclude today's incomplete entry
+      .filter(r => r.date !== dateKey)
       .reduce((sum, r) => {
         return sum + calculateDailyHours({
           date: r.date,
@@ -93,7 +97,6 @@ export default function DailyEntry() {
       breakfastAtOffice: r.breakfastAtOffice,
       leaveType: leaveTypeToStr(r.leaveType as unknown as LeaveType),
     }));
-    // Include today's leave type
     const todayRecord = { date: dateKey, swipeIn, swipeOut, breakfastAtOffice: breakfast, leaveType: leaveTypeToStr(leaveType) };
     const allForTarget = [...allLeaves.filter(r => r.date !== dateKey), todayRecord];
     return calculateWeeklyTarget(allForTarget);
@@ -112,6 +115,28 @@ export default function DailyEntry() {
   const isWeekendDay = isWeekendDate(dateKey);
   const isFullDayLeave = leaveType === LeaveType.fullDayLeave;
 
+  const showFirstHalfWarning = useMemo(() => {
+    if (leaveType !== LeaveType.halfDayFirstHalf) return false;
+    if (!swipeIn) return false;
+    return parseTime(swipeIn) > ONE_PM_MINS;
+  }, [leaveType, swipeIn]);
+
+  const showSecondHalfError = useMemo(() => {
+    if (leaveType !== LeaveType.halfDaySecondHalf) return false;
+    if (!swipeOut) return false;
+    return parseTime(swipeOut) < HALF_PAST_12_MINS;
+  }, [leaveType, swipeOut]);
+
+  const hoursIndicator = useMemo(() => {
+    const hasSwipes = !!(swipeIn || swipeOut);
+    return getDailyHoursIndicator(
+      dailyHours,
+      leaveTypeToStr(leaveType),
+      isWeekendDay,
+      hasSwipes
+    );
+  }, [dailyHours, leaveType, isWeekendDay, swipeIn, swipeOut]);
+
   const handleSave = async () => {
     const record: AttendanceRecord = {
       date: dateKey,
@@ -127,7 +152,6 @@ export default function DailyEntry() {
         description: `${format(selectedDate, 'EEEE, MMM d')} — ${formatHoursDisplay(dailyHours)}`,
       });
     } catch {
-      // Offline fallback
       addToQueue(record);
       syncPending();
       toast.info('Saved offline', {
@@ -140,6 +164,18 @@ export default function DailyEntry() {
     <div className="page-enter px-4 py-5 space-y-4">
       <Toaster position="top-center" richColors />
 
+      {/* Apple Calendar Overlay */}
+      {calendarOpen && (
+        <AppleCalendarOverlay
+          selectedDate={selectedDate}
+          onSelectDate={(date) => {
+            setSelectedDate(date);
+            setCalendarOpen(false);
+          }}
+          onClose={() => setCalendarOpen(false)}
+        />
+      )}
+
       {/* Header */}
       <div>
         <h2 className="text-2xl font-display font-bold text-foreground">Daily Entry</h2>
@@ -149,32 +185,19 @@ export default function DailyEntry() {
       {/* Date Picker */}
       <div className="app-card p-4 space-y-3">
         <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</Label>
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-          <PopoverTrigger asChild>
-            <button className="w-full flex items-center justify-between bg-secondary rounded-xl px-4 py-3 tap-target hover:bg-secondary/80 transition-colors">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-foreground">
-                  {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                </span>
-              </div>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={date => {
-                if (date) {
-                  setSelectedDate(date);
-                  setCalendarOpen(false);
-                }
-              }}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <button
+          onClick={() => setCalendarOpen(true)}
+          className="w-full flex items-center justify-between bg-secondary rounded-xl px-4 py-3 tap-target hover:bg-secondary/80 transition-colors"
+          aria-label="Open date picker"
+        >
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4 text-primary" />
+            <span className="font-semibold text-foreground">
+              {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+            </span>
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        </button>
 
         {isWeekendDay && (
           <div className="flex items-center gap-2 bg-warning/10 border border-warning/20 rounded-xl px-3 py-2">
@@ -225,6 +248,12 @@ export default function DailyEntry() {
               onChange={e => setSwipeIn(e.target.value)}
               className="w-full h-12 bg-secondary rounded-xl px-4 text-foreground font-semibold text-lg border-0 outline-none focus:ring-2 focus:ring-primary/30"
             />
+            {showFirstHalfWarning && (
+              <div className="flex items-center gap-2 bg-warning/10 border border-warning/20 rounded-xl px-3 py-2">
+                <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+                <span className="text-xs font-medium text-warning">Apply leave for full day</span>
+              </div>
+            )}
           </div>
 
           {/* Swipe Out */}
@@ -247,6 +276,12 @@ export default function DailyEntry() {
               onChange={e => setSwipeOut(e.target.value)}
               className="w-full h-12 bg-secondary rounded-xl px-4 text-foreground font-semibold text-lg border-0 outline-none focus:ring-2 focus:ring-primary/30"
             />
+            {showSecondHalfError && (
+              <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+                <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+                <span className="text-xs font-medium text-destructive">You cannot leave before 12:30</span>
+              </div>
+            )}
           </div>
 
           {/* Breakfast Toggle */}
@@ -270,9 +305,24 @@ export default function DailyEntry() {
 
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Daily Hours</span>
-            <span className="text-2xl font-display font-bold text-primary">
-              {formatHoursDisplay(dailyHours)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-2xl font-display font-bold ${
+                hoursIndicator.color === 'green'
+                  ? 'text-success'
+                  : hoursIndicator.color === 'red'
+                  ? 'text-destructive'
+                  : 'text-primary'
+              }`}>
+                {hoursIndicator.hoursDisplay}
+              </span>
+              {hoursIndicator.diffDisplay && (
+                <span className={`text-sm font-semibold ${
+                  hoursIndicator.color === 'green' ? 'text-success' : 'text-destructive'
+                }`}>
+                  {hoursIndicator.diffDisplay}
+                </span>
+              )}
+            </div>
           </div>
 
           {coreViolation && (
@@ -284,7 +334,6 @@ export default function DailyEntry() {
             </div>
           )}
 
-          {/* Smart Prediction */}
           <SmartSwipeOutPrediction
             swipeIn={swipeIn}
             breakfastAtOffice={breakfast}
@@ -311,7 +360,7 @@ export default function DailyEntry() {
       {/* Save Button */}
       <Button
         onClick={handleSave}
-        disabled={saveRecord.isPending}
+        disabled={saveRecord.isPending || showSecondHalfError}
         className="w-full h-14 text-base font-semibold rounded-2xl shadow-glow"
         size="lg"
       >

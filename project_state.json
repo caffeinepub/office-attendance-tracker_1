@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
+  "projectStateVersion": 11,
   "summary": "Production-ready office attendance tracker React app with swipe-in/out logging, automatic working hour calculations (42h 30m weekly target, 7AM-7PM window), core hours enforcement (9:30AM-4PM), 30-minute lunch deduction on regular working days, breakfast bonus (+30min), leave management (full-day, half-day first/second), weekend detection and compensation, smart swipe-out predictions, daily/weekly/monthly dashboard, leave history screen, analytics with charts, CSV/Excel export, push notification reminders, email auth with cloud sync/backup/restore, and premium dark/light mode mobile-first UI.",
   "architectural_notes": [
     "React PWA (mobile-first) with offline-first architecture using IndexedDB/localStorage for local persistence and cloud sync",
@@ -128,6 +128,62 @@
         "REQ-15"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-in-the-daily-entry-screen-frontend-src-pages-dailyentry-tsx-add-a-validation-rule-for-first-half-leave-if-leavetype-is-halfdayfirsthalf-and-the-entered-swipein-time-is-after-13-00-display-an-inline-warning-message-apply-leave-for-full-day-near-the-swipe-in-field-the-record-must-still-be-saveable-this-is-a-non-blocking-advisory-warning-only",
+      "title": "In the Daily Entry screen (frontend/src/pages/DailyEntry.tsx), add a validation rule for first-half leave: if leaveType is halfDayFirstHalf and the entered swipeIn time is after 13:00, display an inline warning message 'Apply leave for full day' near the swipe-in field. The record must still be saveable — this is a non-blocking advisory warning only.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-daily-entry-screen-frontend-src-pages-dailyentry-tsx-add-a-blocking-validation-rule-for-second-half-leave-if-leavetype-is-halfdaysecondhalf-and-the-entered-swipeout-time-is-before-12-30-display-an-inline-error-message-you-cannot-leave-before-12-30-near-the-swipe-out-field-and-disable-the-save-button-until-swipeout-is-12-30-or-later",
+      "title": "In the Daily Entry screen (frontend/src/pages/DailyEntry.tsx), add a blocking validation rule for second-half leave: if leaveType is halfDaySecondHalf and the entered swipeOut time is before 12:30, display an inline error message 'You cannot leave before 12:30' near the swipe-out field and disable the Save button until swipeOut is 12:30 or later.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-working-hour-calculation-logic-in-frontend-src-utils-hourscalculation-ts-to-handle-second-half-leave-days-where-the-user-also-works-after-13-00-for-a-halfdaysecondhalf-entry-with-swipeout-after-13-00-calculate-the-extra-hours-as-clampedswipeout-13-00-and-add-them-to-the-day-s-worked-hours-and-to-the-weekly-hours-total-regardless-of-whether-there-is-any-weekly-deficit-the-existing-4h-00m-target-reduction-for-second-half-leave-still-applies",
+      "title": "Update the working-hour calculation logic in frontend/src/utils/hoursCalculation.ts to handle second-half leave days where the user also works after 13:00. For a halfDaySecondHalf entry with swipeOut after 13:00, calculate the extra hours as (clampedSwipeOut − 13:00) and add them to the day's worked hours and to the weekly hours total, regardless of whether there is any weekly deficit. The existing 4h 00m target reduction for second-half leave still applies.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-daily-hours-visual-indicator-throughout-the-app-daily-entry-inline-display-dashboard-today-tab-and-dashboard-week-day-rows-if-the-day-s-calculated-hours-are-8h-30m-display-the-hours-value-in-green-and-append-the-surplus-in-green-e-g-9h-00m-0h-30m-if-the-day-s-calculated-hours-are-8h-30m-and-it-is-a-regular-working-day-not-a-full-day-leave-display-the-hours-value-in-red-and-append-the-shortfall-in-red-e-g-7h-50m-0h-40m-full-day-leave-entries-should-not-show-a-red-indicator",
+      "title": "Add a daily hours visual indicator throughout the app (Daily Entry inline display, Dashboard Today tab, and Dashboard Week day rows). If the day's calculated hours are ≥ 8h 30m, display the hours value in green and append the surplus in green (e.g., '9h 00m +0h 30m'). If the day's calculated hours are < 8h 30m (and it is a regular working day, not a full-day leave), display the hours value in red and append the shortfall in red (e.g., '7h 50m −0h 40m'). Full-day leave entries should not show a red indicator.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-dashboard-screen-frontend-src-pages-dashboard-tsx-week-tab-to-display-a-day-by-day-breakdown-for-the-full-current-week-monday-through-sunday-each-day-row-must-show-the-day-name-and-date-the-hours-worked-for-that-day-and-the-green-red-visual-indicator-as-defined-in-req-19-days-with-no-record-yet-should-show-or-0h-00m-in-a-neutral-style-the-existing-weekly-summary-stats-target-completed-remaining-progress-bar-on-track-indicator-deficit-message-must-remain-above-or-below-the-day-by-day-list",
+      "title": "Update the Dashboard screen (frontend/src/pages/Dashboard.tsx) Week tab to display a day-by-day breakdown for the full current week (Monday through Sunday). Each day row must show: the day name and date, the hours worked for that day, and the green/red visual indicator (as defined in REQ-19). Days with no record yet should show '—' or '0h 00m' in a neutral style. The existing weekly summary stats (target, completed, remaining, progress bar, on-track indicator, deficit message) must remain above or below the day-by-day list.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-deploy-the-swipetrack-pro-application-backend-and-frontend-to-the-internet-computer-mainnet-production-network-making-it-publicly-accessible",
+      "title": "Deploy the SwipeTrack Pro application (backend and frontend) to the Internet Computer mainnet/production network, making it publicly accessible.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-apple-style-full-screen-calendar-overlay-for-the-date-picker-in-the-daily-entry-screen-frontend-src-pages-dailyentry-tsx-when-the-user-taps-the-date-field-open-a-full-screen-modal-overlay-with-a-40-transparent-frosted-glass-background-backdrop-with-rgba-or-bg-opacity-40-blur-effect-the-modal-must-contain-a-large-monthly-calendar-grid-with-clean-minimal-apple-inspired-typography-muted-weekday-header-labels-s-m-t-w-t-f-s-a-subtle-today-indicator-and-an-elegant-filled-circle-highlight-on-the-selected-day-include-smooth-open-close-css-transition-animations-fade-slide-up-dismiss-the-overlay-on-swipe-down-gesture-or-tap-outside-the-calendar-card-the-calendar-card-itself-should-have-a-solid-non-transparent-surface-so-day-labels-and-numbers-remain-fully-readable-against-the-transparent-backdrop",
+      "title": "Implement an Apple-style full-screen calendar overlay for the date picker in the Daily Entry screen (frontend/src/pages/DailyEntry.tsx). When the user taps the date field, open a full-screen modal overlay with a 40% transparent/frosted-glass background (backdrop with rgba or bg-opacity-40 blur effect). The modal must contain a large monthly calendar grid with: clean minimal Apple-inspired typography, muted weekday header labels (S M T W T F S), a subtle 'today' indicator, and an elegant filled-circle highlight on the selected day. Include smooth open/close CSS transition animations (fade + slide-up). Dismiss the overlay on swipe-down gesture or tap outside the calendar card. The calendar card itself should have a solid (non-transparent) surface so day labels and numbers remain fully readable against the transparent backdrop.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -136,6 +192,20 @@
       "summary": "Create a Motoko backend actor that stores attendance records with the following fields per entry: date (Text), swipeIn (Text), swipeOut (Text), breakfastAtOffice (Bool), leaveType (variant: #noLeave, #halfDayFirstHalf, #halfDaySecondHalf, #fullDayLeave), and a stable HashMap keyed by userId+date. Expose CRUD functions: saveRecord, getRecord, getRecordsByDateRange, deleteRecord, getAllRecords.",
       "reqIds": [
         "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Implement Apple-style full-screen calendar overlay for the date picker: full-screen modal with 40% transparent background (frosted/glass aesthetic), smooth open/close animation, large month grid, elegant day selection highlight, swipe-down or tap-outside dismiss. Apply to Daily Entry screen date picker.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Deploy the updated SwipeTrack Pro application (frontend with the new Apple-style calendar overlay) to the Internet Computer mainnet/production network, replacing the current live deployment and making the update publicly accessible.",
+      "reqIds": [
+        "REQ-23"
       ],
       "status": "pending"
     }

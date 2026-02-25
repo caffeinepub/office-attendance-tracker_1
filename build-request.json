@@ -1,44 +1,72 @@
 {
   "kind": "build_request",
-  "title": "Add 30-minute lunch deduction to working-hour calculation",
+  "title": "Apple-style full-screen calendar overlay with 40% transparency + deploy",
   "projectName": "SwipeTrack Pro",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-15",
-      "text": "Update the working-hour calculation logic in `frontend/src/utils/hoursCalculation.ts` to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave / full-day presence). The updated net hours formula must be: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Half-day leave entries (first half and second half) must NOT have the lunch deduction applied, as per the existing rules. Full-day leave entries continue to return 0 daily hours with no deduction.",
+      "id": "REQ-22",
+      "text": "Implement an Apple-style full-screen calendar overlay for the date picker in the Daily Entry screen (frontend/src/pages/DailyEntry.tsx). When the user taps the date field, open a full-screen modal overlay with a 40% transparent/frosted-glass background (backdrop with rgba or bg-opacity-40 blur effect). The modal must contain a large monthly calendar grid with: clean minimal Apple-inspired typography, muted weekday header labels (S M T W T F S), a subtle 'today' indicator, and an elegant filled-circle highlight on the selected day. Include smooth open/close CSS transition animations (fade + slide-up). Dismiss the overlay on swipe-down gesture or tap outside the calendar card. The calendar card itself should have a solid (non-transparent) surface so day labels and numbers remain fully readable against the transparent backdrop.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4",
-          "msg-6"
+          "msg-5",
+          "msg-6",
+          "msg-7"
         ],
         "quotes": [
-          "if someone is working from 7:00 to 16:00 then total working hours are 8:30 mins and lunch is 30 mins",
-          "Net Hours = (swipeOut − swipeIn) − 30 min lunch + 30 min breakfast bonus (if applicable)"
+          "For calendar use Apple style",
+          "Make sure when you select calendar it shows up full screen",
+          "Calendar should be transparent with 40% transparency"
         ]
       },
       "acceptanceCriteria": [
-        "For a No Leave day, swipe-in 07:00 and swipe-out 16:00 (no breakfast) yields exactly 8h 30m net hours.",
-        "For a No Leave day, swipe-in 07:00 and swipe-out 16:00 with breakfast yields exactly 9h 00m net hours.",
-        "Half-Day First Half entries do not have 30 minutes deducted for lunch.",
-        "Half-Day Second Half entries do not have 30 minutes deducted for lunch.",
-        "Full-Day Leave entries still return 0 daily hours.",
-        "Smart Swipe-Out Prediction and Dashboard/Analytics screens reflect the updated net hours (lunch deduction applied) correctly.",
-        "All existing unit-level logic for clamping, breakfast bonus, and leave reductions remains intact."
+        "Tapping the date input in Daily Entry opens a full-screen overlay",
+        "The overlay backdrop has exactly 40% opacity (transparent/frosted appearance)",
+        "The calendar card (grid container) has a solid opaque surface so text is readable",
+        "Month grid is large, filling most of the screen width",
+        "Weekday headers are displayed in a muted, minimal style",
+        "Today's date has a subtle indicator (e.g., dot or ring)",
+        "The selected date has a filled-circle highlight consistent with Apple Calendar aesthetic",
+        "Overlay opens with a smooth fade + slide-up animation",
+        "Overlay closes with a matching reverse animation",
+        "Tapping outside the calendar card dismisses the overlay",
+        "Swiping down on the overlay dismisses it",
+        "The selected date is correctly applied to the date field in the form after selection",
+        "Works correctly in both light mode and dark mode"
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "text": "Deploy the updated SwipeTrack Pro application (frontend with the new Apple-style calendar overlay) to the Internet Computer mainnet/production network, replacing the current live deployment and making the update publicly accessible.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-8"
+        ],
+        "quotes": [
+          "Build it and publish"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The updated frontend is successfully deployed to the Internet Computer mainnet",
+        "The live canister URL serves the new build with the Apple-style calendar overlay",
+        "The backend canister remains functional and unchanged",
+        "No regressions in existing features post-deployment"
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Do not change the backend schema or Motoko actor.",
-    "Lunch deduction must only apply to leaveType = #noLeave (regular working day); never to half-day or full-day leave entries."
+    "Do not modify any file under frontend/src/hooks/ or frontend/src/components/ui",
+    "The calendar overlay must not interfere with existing form state management in DailyEntry.tsx",
+    "The 40% transparency must be on the backdrop/overlay layer only — the calendar grid card itself must remain fully readable"
   ],
   "nonGoals": [
-    "Changing any UI layout or visual design.",
-    "Adding configurable lunch duration (always fixed at 30 minutes).",
-    "Modifying backend data models or API.",
-    "Any new screens or features beyond the lunch deduction fix."
+    "Redesigning any screen other than the Daily Entry date picker calendar",
+    "Adding calendar views to Dashboard, Analytics, Leaves, or Export screens",
+    "Changing the working-hour calculation logic",
+    "Modifying the backend schema or any backend endpoints"
   ],
   "imageRequirements": {
     "required": [],

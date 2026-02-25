@@ -1,13 +1,16 @@
 # Specification
 
 ## Summary
-**Goal:** Automatically deduct 30 minutes for lunch from the working-hour calculation on regular (no-leave) working days in SwipeTrack Pro.
+**Goal:** Add an Apple-style full-screen calendar overlay to the Daily Entry date picker and deploy the updated app to production.
 
 **Planned changes:**
-- Update `frontend/src/utils/hoursCalculation.ts` to apply a 30-minute lunch deduction for entries where `leaveType = #noLeave` (full-day presence).
-- Net hours formula becomes: `(swipeOut − swipeIn, clamped) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true)`.
-- Ensure half-day leave entries (first half and second half) do NOT receive the lunch deduction.
-- Ensure full-day leave entries continue to return 0 daily hours with no deduction.
-- Smart Swipe-Out Prediction and Dashboard/Analytics screens will reflect the updated net hours automatically.
+- Replace the existing date picker in `frontend/src/pages/DailyEntry.tsx` with a full-screen modal overlay triggered by tapping the date field
+- Overlay backdrop uses 40% opacity with a frosted-glass/blur effect; the calendar card itself has a solid opaque surface for readability
+- Calendar grid features Apple-inspired minimal typography, muted weekday headers (S M T W T F S), a subtle today indicator, and a filled-circle highlight on the selected date
+- Smooth fade + slide-up open/close CSS transition animations
+- Dismiss overlay by tapping outside the calendar card or swiping down
+- Selected date is correctly applied back to the form field
+- Overlay works in both light and dark mode
+- Deploy the updated frontend to the Internet Computer mainnet, replacing the current live deployment
 
-**User-visible outcome:** On a regular working day (e.g., swipe-in 07:00, swipe-out 16:00, no breakfast), the displayed net hours will show 8h 30m instead of 9h 00m, correctly reflecting the 30-minute lunch deduction. With breakfast, it shows 9h 00m.
+**User-visible outcome:** Users on the Daily Entry screen can tap the date field to open a beautiful full-screen Apple-style calendar picker with a translucent backdrop, then select a date or dismiss with a swipe/tap — and the live production app is updated with this new experience.

@@ -1,41 +1,50 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T08:34:19.386Z",
+  "generatedAt": "2026-02-25T09:43:35.856Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
+    "total": 2,
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-15",
-        "summary": "Update the working-hour calculation logic in `frontend/src/utils/hoursCalculation.ts` to automatically deduct 30 minutes for lunch on regular working days (leaveType = #noLeave / full-day presence). The updated net hours formula must be: Net Hours = (swipeOut − swipeIn, after clamping) − 30 min lunch + 30 min breakfast bonus (if breakfastAtOffice is true). Half-day leave entries (first half and second half) must NOT have the lunch deduction applied, as per the existing rules. Full-day leave entries continue to return 0 daily hours with no deduction.",
+        "id": "REQ-22",
+        "summary": "Implement an Apple-style full-screen calendar overlay for the date picker in the Daily Entry screen (frontend/src/pages/DailyEntry.tsx). When the user taps the date field, open a full-screen modal overlay with a 40% transparent/frosted-glass background (backdrop with rgba or bg-opacity-40 blur effect). The modal must contain a large monthly calendar grid with: clean minimal Apple-inspired typography, muted weekday header labels (S M T W T F S), a subtle 'today' indicator, and an elegant filled-circle highlight on the selected day. Include smooth open/close CSS transition animations (fade + slide-up). Dismiss the overlay on swipe-down gesture or tap outside the calendar card. The calendar card itself should have a solid (non-transparent) surface so day labels and numbers remain fully readable against the transparent backdrop.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/hoursCalculation.ts",
-          "frontend/src/components/SmartSwipeOutPrediction.tsx",
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/pages/Analytics.tsx",
-          "frontend/src/pages/Export.tsx"
+          "frontend/src/components/AppleCalendarOverlay.tsx",
+          "frontend/src/pages/DailyEntry.tsx",
+          "frontend/src/index.css"
         ],
         "matchedFiles": [
-          "frontend/src/utils/hoursCalculation.ts",
-          "frontend/src/components/SmartSwipeOutPrediction.tsx"
+          "frontend/src/components/AppleCalendarOverlay.tsx",
+          "frontend/src/pages/DailyEntry.tsx",
+          "frontend/src/index.css"
         ]
+      },
+      {
+        "id": "REQ-23",
+        "summary": "Deploy the updated SwipeTrack Pro application (frontend with the new Apple-style calendar overlay) to the Internet Computer mainnet/production network, replacing the current live deployment and making the update publicly accessible.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
-    "build-template/README.md",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/SmartSwipeOutPrediction.tsx",
-    "frontend/src/utils/hoursCalculation.ts",
+    "frontend/src/components/AppleCalendarOverlay.tsx",
+    "frontend/src/index.css",
+    "frontend/src/pages/DailyEntry.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

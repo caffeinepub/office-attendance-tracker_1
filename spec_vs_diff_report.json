@@ -1,15 +1,24 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T08:34:19.383Z",
-  "summary": "The diff implements REQ-15 by adding a LUNCH_DEDUCTION constant (30 min) in hoursCalculation.ts, applying it only to noLeave days in calculateDailyHours, updating calculateSwipeOutPrediction to factor in the lunch deduction, and adding an optional leaveType prop to SmartSwipeOutPrediction component. All acceptance criteria appear to be addressed.",
-  "missing_requirements": [],
+  "generatedAt": "2026-02-25T09:43:35.853Z",
+  "summary": "REQ-22 is substantially implemented via a new AppleCalendarOverlay component and integration into DailyEntry.tsx, with CSS animations and styles in index.css. REQ-23 (deployment to Internet Computer mainnet) cannot be verified from code changes alone — no deployment scripts, dfx.json changes, canister ID updates, or CI/CD pipeline evidence are present in the diff.",
+  "missing_requirements": [
+    {
+      "id": "REQ-23",
+      "requirement": "Deploy the updated SwipeTrack Pro application to the Internet Computer mainnet/production network, replacing the current live deployment and making the update publicly accessible.",
+      "reason": "The diff contains only frontend source code changes (new component, CSS, page updates). There is no evidence of deployment artifacts, dfx deploy commands, updated canister IDs, CI/CD pipeline changes, or any other deployment-related file modifications that would indicate the app was actually deployed to the IC mainnet.",
+      "evidence": []
+    }
+  ],
   "hallucinated_features": [],
-  "confidence": 0.9,
+  "confidence": 0.82,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/SmartSwipeOutPrediction.tsx",
-    "frontend/src/utils/hoursCalculation.ts",
+    "frontend/src/components/AppleCalendarOverlay.tsx",
+    "frontend/src/index.css",
+    "frontend/src/pages/DailyEntry.tsx",
     "project_state.json"
   ]
 }
