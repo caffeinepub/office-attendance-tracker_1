@@ -515,7 +515,6 @@ export default function Dashboard() {
                   <div>
                     <p className="text-sm font-semibold text-warning">
                       You have {formatHoursDisplay(weekData.deficit)} deficit.
-                      Work on weekend.
                     </p>
                     {weekData.weekendHours > 0 && (
                       <p className="text-xs text-muted-foreground mt-0.5">

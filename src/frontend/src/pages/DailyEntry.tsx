@@ -24,7 +24,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { type AttendanceRecord, LeaveType } from "../backend";
 import AppleCalendarOverlay from "../components/AppleCalendarOverlay";
-import FloatingActionButton from "../components/FloatingActionButton";
 import SmartSwipeOutPrediction from "../components/SmartSwipeOutPrediction";
 import { useActor } from "../hooks/useActor";
 import { useOfflineSync } from "../hooks/useOfflineSync";
@@ -33,7 +32,6 @@ import {
   useGetRecordsByDateRange,
   useSaveRecord,
 } from "../hooks/useQueries";
-import { useQuickSwipe } from "../hooks/useQuickSwipe";
 import {
   calculateDailyHours,
   calculateWeeklyTarget,
@@ -99,7 +97,6 @@ export default function DailyEntry() {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [fabOpen, setFabOpen] = useState(false);
   const [swipeIn, setSwipeIn] = useState("");
   const [swipeOut, setSwipeOut] = useState("");
   const [breakfast, setBreakfast] = useState(false);
@@ -113,17 +110,6 @@ export default function DailyEntry() {
   const saveRecord = useSaveRecord();
   const { actor } = useActor();
   const { addToQueue, syncPending } = useOfflineSync(actor);
-
-  const { handleSwipeIn, handleSwipeOut, isSwipeInPending, isSwipeOutPending } =
-    useQuickSwipe((message) => {
-      const isIn = message.toLowerCase().includes("swipe in");
-      toast.success(message, {
-        description: isIn
-          ? "Check-in time recorded for today"
-          : "Check-out time recorded for today",
-        duration: 3000,
-      });
-    });
 
   // Load existing record when date changes
   useEffect(() => {
@@ -306,7 +292,8 @@ export default function DailyEntry() {
           selectedDate={selectedDate}
           onSelectDate={(date) => {
             setSelectedDate(date);
-            setCalendarOpen(false);
+            // Do NOT call setCalendarOpen(false) here.
+            // The overlay handles its own close animation and calls onClose after it completes.
           }}
           onClose={() => setCalendarOpen(false)}
         />
@@ -595,15 +582,6 @@ export default function DailyEntry() {
           </span>
         )}
       </Button>
-
-      <FloatingActionButton
-        isOpen={fabOpen}
-        onToggle={() => setFabOpen((prev) => !prev)}
-        onSwipeIn={handleSwipeIn}
-        onSwipeOut={handleSwipeOut}
-        isSwipeInPending={isSwipeInPending}
-        isSwipeOutPending={isSwipeOutPending}
-      />
     </div>
   );
 }

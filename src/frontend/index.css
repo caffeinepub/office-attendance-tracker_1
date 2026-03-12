@@ -5,73 +5,93 @@
 @layer base {
     :root {
         --radius: 0.625rem;
-        --background: 1 0 0;
-        --foreground: 0.145 0 0;
+        /* Apple Blue primary */
+        --primary: 0.58 0.22 255;
+        --primary-foreground: 1 0 0;
+        /* Backgrounds */
+        --background: 0.985 0.005 260;
+        --foreground: 0.14 0.015 260;
         --card: 1 0 0;
-        --card-foreground: 0.145 0 0;
+        --card-foreground: 0.14 0.015 260;
         --popover: 1 0 0;
-        --popover-foreground: 0.145 0 0;
-        --primary: 0.205 0 0;
-        --primary-foreground: 0.985 0 0;
-        --secondary: 0.97 0 0;
-        --secondary-foreground: 0.205 0 0;
-        --muted: 0.97 0 0;
-        --muted-foreground: 0.556 0 0;
-        --accent: 0.97 0 0;
-        --accent-foreground: 0.205 0 0;
-        --destructive: 0.577 0.245 27.325;
-        --destructive-foreground: 0.985 0 0;
-        --border: 0.922 0 0;
-        --input: 0.922 0 0;
-        --ring: 0.708 0 0;
-        --chart-1: 0.646 0.222 41.116;
-        --chart-2: 0.6 0.118 184.704;
-        --chart-3: 0.398 0.07 227.392;
-        --chart-4: 0.828 0.189 84.429;
-        --chart-5: 0.769 0.188 70.08;
-        --sidebar: 0.985 0 0;
-        --sidebar-foreground: 0.145 0 0;
-        --sidebar-primary: 0.205 0 0;
-        --sidebar-primary-foreground: 0.985 0 0;
-        --sidebar-accent: 0.97 0 0;
-        --sidebar-accent-foreground: 0.205 0 0;
-        --sidebar-border: 0.922 0 0;
-        --sidebar-ring: 0.708 0 0;
+        --popover-foreground: 0.14 0.015 260;
+        --secondary: 0.95 0.008 255;
+        --secondary-foreground: 0.25 0.02 255;
+        --muted: 0.94 0.006 255;
+        --muted-foreground: 0.52 0.02 255;
+        --accent: 0.93 0.012 255;
+        --accent-foreground: 0.25 0.02 255;
+        --destructive: 0.58 0.22 27;
+        --destructive-foreground: 1 0 0;
+        --border: 0.89 0.01 255;
+        --input: 0.89 0.01 255;
+        --ring: 0.58 0.22 255;
+        /* Success - Apple Green */
+        --success: 0.58 0.18 145;
+        --success-foreground: 1 0 0;
+        /* Warning - Apple Orange */
+        --warning: 0.72 0.19 55;
+        --warning-foreground: 0.15 0 0;
+        /* Charts */
+        --chart-1: 0.58 0.22 255;
+        --chart-2: 0.58 0.18 145;
+        --chart-3: 0.72 0.19 55;
+        --chart-4: 0.58 0.22 330;
+        --chart-5: 0.65 0.2 190;
+        /* Sidebar */
+        --sidebar: 0.97 0.005 260;
+        --sidebar-foreground: 0.14 0.015 260;
+        --sidebar-primary: 0.58 0.22 255;
+        --sidebar-primary-foreground: 1 0 0;
+        --sidebar-accent: 0.93 0.012 255;
+        --sidebar-accent-foreground: 0.25 0.02 255;
+        --sidebar-border: 0.89 0.01 255;
+        --sidebar-ring: 0.58 0.22 255;
     }
 
     .dark {
-        --background: 0.145 0 0;
-        --foreground: 0.985 0 0;
-        --card: 0.205 0 0;
-        --card-foreground: 0.985 0 0;
-        --popover: 0.269 0 0;
-        --popover-foreground: 0.985 0 0;
-        --primary: 0.922 0 0;
-        --primary-foreground: 0.205 0 0;
-        --secondary: 0.269 0 0;
-        --secondary-foreground: 0.985 0 0;
-        --muted: 0.269 0 0;
-        --muted-foreground: 0.708 0 0;
-        --accent: 0.371 0 0;
-        --accent-foreground: 0.985 0 0;
-        --destructive: 0.704 0.191 22.216;
-        --destructive-foreground: 0.205 0 0;
+        /* Apple Blue primary - slightly brighter in dark */
+        --primary: 0.65 0.22 255;
+        --primary-foreground: 0.1 0 0;
+        /* Backgrounds */
+        --background: 0.12 0.01 255;
+        --foreground: 0.96 0.005 255;
+        --card: 0.18 0.015 255;
+        --card-foreground: 0.96 0.005 255;
+        --popover: 0.22 0.015 255;
+        --popover-foreground: 0.96 0.005 255;
+        --secondary: 0.24 0.015 255;
+        --secondary-foreground: 0.96 0.005 255;
+        --muted: 0.24 0.015 255;
+        --muted-foreground: 0.63 0.02 255;
+        --accent: 0.3 0.02 255;
+        --accent-foreground: 0.96 0.005 255;
+        --destructive: 0.65 0.2 22;
+        --destructive-foreground: 0.18 0 0;
         --border: 1 0 0 / 10%;
         --input: 1 0 0 / 15%;
-        --ring: 0.556 0 0;
-        --chart-1: 0.488 0.243 264.376;
-        --chart-2: 0.696 0.17 162.48;
-        --chart-3: 0.769 0.188 70.08;
-        --chart-4: 0.627 0.265 303.9;
-        --chart-5: 0.645 0.246 16.439;
-        --sidebar: 0.205 0 0;
-        --sidebar-foreground: 0.985 0 0;
-        --sidebar-primary: 0.488 0.243 264.376;
-        --sidebar-primary-foreground: 0.985 0 0;
-        --sidebar-accent: 0.269 0 0;
-        --sidebar-accent-foreground: 0.985 0 0;
+        --ring: 0.65 0.22 255;
+        /* Success - Apple Green dark */
+        --success: 0.65 0.18 145;
+        --success-foreground: 0.1 0 0;
+        /* Warning - Apple Orange dark */
+        --warning: 0.76 0.18 55;
+        --warning-foreground: 0.1 0 0;
+        /* Charts */
+        --chart-1: 0.65 0.22 255;
+        --chart-2: 0.65 0.18 145;
+        --chart-3: 0.76 0.18 55;
+        --chart-4: 0.65 0.22 330;
+        --chart-5: 0.68 0.2 190;
+        /* Sidebar */
+        --sidebar: 0.18 0.015 255;
+        --sidebar-foreground: 0.96 0.005 255;
+        --sidebar-primary: 0.65 0.22 255;
+        --sidebar-primary-foreground: 0.1 0 0;
+        --sidebar-accent: 0.24 0.015 255;
+        --sidebar-accent-foreground: 0.96 0.005 255;
         --sidebar-border: 1 0 0 / 10%;
-        --sidebar-ring: 0.439 0 0;
+        --sidebar-ring: 0.65 0.22 255;
     }
 
     * {
@@ -79,5 +99,74 @@
     }
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+/* App card utility */
+@layer components {
+    .app-card {
+        @apply bg-card rounded-2xl border border-border shadow-card;
+    }
+
+    .tap-target {
+        @apply min-h-[44px];
+    }
+
+    .page-enter {
+        animation: fade-in 0.3s ease-out;
+    }
+
+    /* Apple Calendar Overlay */
+    .apple-cal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: oklch(0 0 0 / 0.4);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        border: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100vw;
+        max-height: 100vh;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    .apple-cal-overlay--visible {
+        opacity: 1;
+    }
+
+    .apple-cal-card {
+        background: oklch(var(--card));
+        border-radius: 1.5rem 1.5rem 0 0;
+        width: 100%;
+        max-width: 480px;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        border: 1px solid oklch(var(--border));
+        box-shadow: 0 -8px 40px oklch(0 0 0 / 0.15);
+    }
+
+    .apple-cal-card--visible {
+        transform: translateY(0);
+    }
+
+    .apple-cal-selected {
+        background: oklch(var(--primary) / 1);
+        color: oklch(var(--primary-foreground));
+    }
+
+    .apple-cal-today {
+        color: oklch(var(--primary) / 1);
+        font-weight: 700;
+    }
+
+    .shadow-glow {
+        box-shadow: 0 0 24px oklch(var(--primary) / 0.3);
     }
 }

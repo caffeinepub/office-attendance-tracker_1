@@ -239,7 +239,7 @@
     -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     transition: opacity 0.3s ease-out;
-    touch-action: none;
+    /* touch-action intentionally omitted — letting child day buttons receive touch events */
   }
 
   .apple-cal-overlay--visible {

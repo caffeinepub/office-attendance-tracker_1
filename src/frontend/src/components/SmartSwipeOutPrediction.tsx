@@ -55,7 +55,7 @@ export default function SmartSwipeOutPrediction({
   if (!predictedSwipeOut) return null;
 
   const predictedMins = parseTime(predictedSwipeOut);
-  const timeDisplay = formatTimeAmPm(predictedMins);
+  const _timeDisplay = formatTimeAmPm(predictedMins);
 
   // AI-based insight: average hours per remaining workday
   const daysLeft = Math.max(1, remainingWorkdays);
@@ -81,8 +81,7 @@ export default function SmartSwipeOutPrediction({
           <span className="font-semibold text-foreground">
             {avgDisplay}/day
           </span>{" "}
-          to stay on track. Today, swipe out by{" "}
-          <span className="font-semibold text-foreground">{timeDisplay}</span>.
+          to stay on track.
         </p>
       </div>
     </div>

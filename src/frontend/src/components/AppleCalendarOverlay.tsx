@@ -11,7 +11,7 @@ import {
   startOfWeek,
   subMonths,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -76,27 +76,28 @@ export default function AppleCalendarOverlay({
   };
 
   // Click outside card to dismiss
-  const handleBackdropClick = (e: React.MouseEvent<HTMLElement>) => {
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
     if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
       handleClose();
     }
   };
 
-  const handleBackdropKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDialogElement>) => {
     if (e.key === "Escape") handleClose();
   };
 
   const days = buildCalendarDays(viewMonth);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: custom overlay needs open attribute control
     <dialog
+      open
+      aria-label="Date picker"
       className={`apple-cal-overlay ${visible && !closing ? "apple-cal-overlay--visible" : ""}`}
       onClick={handleBackdropClick}
-      onKeyDown={handleBackdropKeyDown}
+      onKeyDown={handleKeyDown}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      aria-modal="true"
-      aria-label="Date picker"
     >
       <div
         ref={cardRef}
@@ -166,7 +167,6 @@ export default function AppleCalendarOverlay({
                 key={format(day, "yyyy-MM-dd")}
                 onClick={() => {
                   onSelectDate(day);
-                  // slight delay so user sees selection before close
                   setTimeout(handleClose, 120);
                 }}
                 className={`
@@ -190,7 +190,6 @@ export default function AppleCalendarOverlay({
                 >
                   {format(day, "d")}
                 </span>
-                {/* Today dot indicator (only when not selected) */}
                 {isTodayDate && !isSelected && (
                   <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
                 )}
