@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -56,8 +55,8 @@ function buildExportRows(records: AttendanceRecord[]): ExportRow[] {
     });
     return {
       Date: r.date,
-      "Swipe In": r.swipeIn || "—",
-      "Swipe Out": r.swipeOut || "—",
+      "Swipe In": r.swipeIn || "\u2014",
+      "Swipe Out": r.swipeOut || "\u2014",
       Hours: formatHoursDisplay(hours),
       Breakfast: r.breakfastAtOffice ? "Yes" : "No",
       "Leave Type": getLeaveTypeLabel(leaveStr),
@@ -79,7 +78,6 @@ function downloadCSV(rows: ExportRow[], filename: string) {
         .join(","),
     ),
   ].join("\n");
-
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -92,15 +90,12 @@ function downloadCSV(rows: ExportRow[], filename: string) {
 }
 
 function downloadXLSXFallback(rows: ExportRow[], filename: string) {
-  // Simple XLSX-like format using CSV with .xlsx extension as fallback
-  // Build a proper tab-separated values file that Excel can open
   if (rows.length === 0) return;
   const headers = Object.keys(rows[0]) as (keyof ExportRow)[];
   const tsvContent = [
     headers.join("\t"),
     ...rows.map((row) => headers.map((h) => String(row[h])).join("\t")),
   ].join("\n");
-
   const blob = new Blob([tsvContent], {
     type: "application/vnd.ms-excel;charset=utf-8;",
   });
@@ -121,7 +116,6 @@ export default function Export() {
 
   const weekRange = getWeekRange(today);
   const monthRange = getMonthRange(today);
-
   const { data: allRecords = [] } = useGetAllRecords();
   const { data: weekRecords = [] } = useGetRecordsByDateRange(
     weekRange.start,
@@ -157,9 +151,8 @@ export default function Export() {
   const handleCSV = async () => {
     setIsExporting("csv");
     try {
-      const rows = buildExportRows(selectedRecords);
       downloadCSV(
-        rows,
+        buildExportRows(selectedRecords),
         `swipetrack-${range}-${format(today, "yyyy-MM-dd")}.csv`,
       );
     } finally {
@@ -170,9 +163,8 @@ export default function Export() {
   const handleXLSX = async () => {
     setIsExporting("xlsx");
     try {
-      const rows = buildExportRows(selectedRecords);
       downloadXLSXFallback(
-        rows,
+        buildExportRows(selectedRecords),
         `swipetrack-${range}-${format(today, "yyyy-MM-dd")}.xlsx`,
       );
     } finally {
@@ -181,69 +173,127 @@ export default function Export() {
   };
 
   return (
-    <div className="page-enter px-4 py-5 space-y-5">
+    <div className="page-enter px-4 pt-4 pb-6 space-y-5">
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-display font-bold text-foreground">
+        <h2
+          className="ios-number"
+          style={{
+            fontSize: 34,
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+            color: "oklch(var(--foreground))",
+          }}
+        >
           Export
         </h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p
+          style={{
+            fontSize: 15,
+            color: "oklch(var(--muted-foreground))",
+            marginTop: 2,
+          }}
+        >
           Download your attendance data
         </p>
       </div>
 
       {/* Range Selector */}
-      <div className="app-card p-4 space-y-3">
-        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Date Range
-        </Label>
-        <Select value={range} onValueChange={(v) => setRange(v as ExportRange)}>
-          <SelectTrigger className="h-12 rounded-xl bg-secondary border-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="week">Current Week</SelectItem>
-            <SelectItem value="month">Current Month</SelectItem>
-            <SelectItem value="all">All Records</SelectItem>
-          </SelectContent>
-        </Select>
+      <div>
+        <p className="ios-section-header">Date Range</p>
+        <div className="ios-card overflow-hidden">
+          <div className="px-4 py-1">
+            <Select
+              value={range}
+              onValueChange={(v) => setRange(v as ExportRange)}
+            >
+              <SelectTrigger
+                className="h-11 border-0 shadow-none bg-transparent px-0 focus:ring-0 focus:ring-offset-0"
+                style={{ fontSize: 17 }}
+                data-ocid="export.select"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="week" style={{ fontSize: 16 }}>
+                  Current Week
+                </SelectItem>
+                <SelectItem value="month" style={{ fontSize: 16 }}>
+                  Current Month
+                </SelectItem>
+                <SelectItem value="all" style={{ fontSize: 16 }}>
+                  All Records
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="flex items-center justify-between bg-secondary rounded-xl px-4 py-3">
-          <span className="text-sm text-muted-foreground">
-            Records to export
-          </span>
-          <span className="text-sm font-bold text-foreground">
-            {selectedRecords.length}
-          </span>
-        </div>
-        <div className="flex items-center justify-between bg-secondary rounded-xl px-4 py-3">
-          <span className="text-sm text-muted-foreground">Range</span>
-          <span className="text-sm font-bold text-foreground">
-            {rangeLabel}
-          </span>
+          <div
+            style={{
+              height: "0.5px",
+              backgroundColor: "oklch(var(--border) / 0.4)",
+              marginLeft: 16,
+            }}
+          />
+          <div className="ios-row justify-between">
+            <span
+              style={{ fontSize: 15, color: "oklch(var(--muted-foreground))" }}
+            >
+              Records
+            </span>
+            <span
+              className="ios-number"
+              style={{ fontSize: 17, color: "oklch(var(--foreground))" }}
+            >
+              {selectedRecords.length}
+            </span>
+          </div>
+          <div
+            style={{
+              height: "0.5px",
+              backgroundColor: "oklch(var(--border) / 0.4)",
+              marginLeft: 16,
+            }}
+          />
+          <div className="ios-row justify-between">
+            <span
+              style={{ fontSize: 15, color: "oklch(var(--muted-foreground))" }}
+            >
+              Range
+            </span>
+            <span style={{ fontSize: 15, color: "oklch(var(--foreground))" }}>
+              {rangeLabel}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Columns Preview */}
-      <div className="app-card p-4 space-y-3">
-        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Included Columns
-        </Label>
-        <div className="flex flex-wrap gap-2">
-          {[
-            "Date",
-            "Swipe In",
-            "Swipe Out",
-            "Hours",
-            "Breakfast",
-            "Leave Type",
-          ].map((col) => (
-            <span
-              key={col}
-              className="text-xs bg-primary/10 text-primary font-medium px-2.5 py-1 rounded-full"
-            >
-              {col}
-            </span>
-          ))}
+      {/* Columns */}
+      <div>
+        <p className="ios-section-header">Included Columns</p>
+        <div className="ios-card px-4 py-3">
+          <div className="flex flex-wrap gap-2">
+            {[
+              "Date",
+              "Swipe In",
+              "Swipe Out",
+              "Hours",
+              "Breakfast",
+              "Leave Type",
+            ].map((col) => (
+              <span
+                key={col}
+                className="px-2.5 py-1 rounded-full"
+                style={{
+                  fontSize: 13,
+                  backgroundColor: "oklch(var(--primary) / 0.1)",
+                  color: "oklch(var(--primary))",
+                }}
+              >
+                {col}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -253,17 +303,21 @@ export default function Export() {
           onClick={handleCSV}
           disabled={isExporting !== null || selectedRecords.length === 0}
           variant="outline"
-          className="w-full h-14 text-base font-semibold rounded-2xl border-border"
-          size="lg"
+          className="w-full rounded-xl font-semibold"
+          style={{ height: 50, fontSize: 17 }}
+          data-ocid="export.csv.button"
         >
           {isExporting === "csv" ? (
             <span className="flex items-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin" />
-              Exporting CSV...
+              Exporting\u2026
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
+              <FileText
+                className="w-5 h-5"
+                style={{ color: "oklch(var(--primary))" }}
+              />
               Export as CSV
             </span>
           )}
@@ -272,13 +326,14 @@ export default function Export() {
         <Button
           onClick={handleXLSX}
           disabled={isExporting !== null || selectedRecords.length === 0}
-          className="w-full h-14 text-base font-semibold rounded-2xl shadow-glow"
-          size="lg"
+          className="w-full rounded-xl font-semibold shadow-glow"
+          style={{ height: 50, fontSize: 17 }}
+          data-ocid="export.xlsx.button"
         >
           {isExporting === "xlsx" ? (
             <span className="flex items-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin" />
-              Exporting Excel...
+              Exporting\u2026
             </span>
           ) : (
             <span className="flex items-center gap-2">
@@ -289,7 +344,13 @@ export default function Export() {
         </Button>
 
         {selectedRecords.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground">
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: 15,
+              color: "oklch(var(--muted-foreground))",
+            }}
+          >
             No records found for the selected range.
           </p>
         )}
@@ -297,73 +358,115 @@ export default function Export() {
 
       {/* Preview Table */}
       {selectedRecords.length > 0 && (
-        <div className="app-card p-4 space-y-3">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div>
+          <p className="ios-section-header">
             Preview ({Math.min(selectedRecords.length, 5)} of{" "}
             {selectedRecords.length})
-          </Label>
-          <div className="overflow-x-auto -mx-1">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 px-2 text-muted-foreground font-semibold">
-                    Date
-                  </th>
-                  <th className="text-left py-2 px-2 text-muted-foreground font-semibold">
-                    In
-                  </th>
-                  <th className="text-left py-2 px-2 text-muted-foreground font-semibold">
-                    Out
-                  </th>
-                  <th className="text-left py-2 px-2 text-muted-foreground font-semibold">
-                    Hours
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedRecords.slice(0, 5).map((r) => {
-                  const leaveStr = leaveTypeToStr(
-                    r.leaveType as unknown as LeaveType,
-                  );
-                  const hours = calculateDailyHours({
-                    date: r.date,
-                    swipeIn: r.swipeIn,
-                    swipeOut: r.swipeOut,
-                    breakfastAtOffice: r.breakfastAtOffice,
-                    leaveType: leaveStr,
-                  });
-                  return (
-                    <tr key={r.date} className="border-b border-border/50">
-                      <td className="py-2 px-2 font-medium text-foreground">
-                        {r.date}
-                      </td>
-                      <td className="py-2 px-2 text-muted-foreground">
-                        {r.swipeIn || "—"}
-                      </td>
-                      <td className="py-2 px-2 text-muted-foreground">
-                        {r.swipeOut || "—"}
-                      </td>
-                      <td className="py-2 px-2 font-semibold text-primary">
-                        {formatHoursDisplay(hours)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          </p>
+          <div className="ios-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr
+                    style={{
+                      borderBottom: "0.5px solid oklch(var(--border) / 0.4)",
+                    }}
+                  >
+                    {["Date", "In", "Out", "Hours"].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left py-2.5 px-4"
+                        style={{
+                          fontSize: 12,
+                          color: "oklch(var(--muted-foreground))",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedRecords.slice(0, 5).map((r, idx) => {
+                    const leaveStr = leaveTypeToStr(
+                      r.leaveType as unknown as LeaveType,
+                    );
+                    const hours = calculateDailyHours({
+                      date: r.date,
+                      swipeIn: r.swipeIn,
+                      swipeOut: r.swipeOut,
+                      breakfastAtOffice: r.breakfastAtOffice,
+                      leaveType: leaveStr,
+                    });
+                    return (
+                      <tr
+                        key={r.date}
+                        style={{
+                          borderTop:
+                            idx > 0
+                              ? "0.5px solid oklch(var(--border) / 0.3)"
+                              : undefined,
+                        }}
+                      >
+                        <td
+                          className="py-2.5 px-4"
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: "oklch(var(--foreground))",
+                          }}
+                        >
+                          {r.date}
+                        </td>
+                        <td
+                          className="py-2.5 px-4"
+                          style={{
+                            fontSize: 13,
+                            color: "oklch(var(--muted-foreground))",
+                          }}
+                        >
+                          {r.swipeIn || "\u2014"}
+                        </td>
+                        <td
+                          className="py-2.5 px-4"
+                          style={{
+                            fontSize: 13,
+                            color: "oklch(var(--muted-foreground))",
+                          }}
+                        >
+                          {r.swipeOut || "\u2014"}
+                        </td>
+                        <td
+                          className="py-2.5 px-4"
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "oklch(var(--primary))",
+                          }}
+                        >
+                          {formatHoursDisplay(hours)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
       {/* Footer */}
-      <div className="pt-4 pb-2 text-center">
-        <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} SwipeTrack Pro · Built with ❤️ using{" "}
+      <div className="pt-2 pb-2 text-center">
+        <p style={{ fontSize: 13, color: "oklch(var(--muted-foreground))" }}>
+          \u00a9 {new Date().getFullYear()} SwipeTrack Pro \u00b7 Built with
+          \u2764\ufe0f using{" "}
           <a
             href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || "swipetrack-pro")}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline font-medium"
+            style={{ color: "oklch(var(--primary))" }}
           >
             caffeine.ai
           </a>

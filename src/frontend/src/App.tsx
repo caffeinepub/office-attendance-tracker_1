@@ -13,6 +13,7 @@ import Analytics from "./pages/Analytics";
 import DailyEntry from "./pages/DailyEntry";
 import Dashboard from "./pages/Dashboard";
 import Export from "./pages/Export";
+import Holidays from "./pages/Holidays";
 import Leaves from "./pages/Leaves";
 
 // Root route with Layout as the shell
@@ -38,6 +39,12 @@ const leavesRoute = createRoute({
   component: Leaves,
 });
 
+const holidaysRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/holidays",
+  component: Holidays,
+});
+
 const analyticsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/analytics",
@@ -54,6 +61,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
   leavesRoute,
+  holidaysRoute,
   analyticsRoute,
   exportRoute,
 ]);

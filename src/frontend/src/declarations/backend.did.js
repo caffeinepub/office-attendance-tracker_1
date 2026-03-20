@@ -33,6 +33,7 @@ export const LeaveType = IDL.Variant({
 export const AttendanceRecord = IDL.Record({
   'swipeIn' : IDL.Text,
   'date' : IDL.Text,
+  'holidayWorking' : IDL.Bool,
   'breakfastAtOffice' : IDL.Bool,
   'swipeOut' : IDL.Text,
   'leaveType' : LeaveType,
@@ -126,6 +127,7 @@ export const idlFactory = ({ IDL }) => {
   const AttendanceRecord = IDL.Record({
     'swipeIn' : IDL.Text,
     'date' : IDL.Text,
+    'holidayWorking' : IDL.Bool,
     'breakfastAtOffice' : IDL.Bool,
     'swipeOut' : IDL.Text,
     'leaveType' : LeaveType,

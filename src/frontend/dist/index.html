@@ -7,19 +7,31 @@
         <meta property='og:title' content='SwipeTrack Pro' />
         <meta property='og:description' content='Smart office attendance tracking with swipe-in/out logging, leave management, analytics, and export.' />
         <meta property='og:type' content='website' />
+        <meta name='mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-capable' content='yes' />
-        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
-        <meta name='apple-mobile-web-app-title' content='SwipeTrack Pro' />
+        <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
+        <meta name='apple-mobile-web-app-title' content='SwipeTrack' />
+        <link rel='manifest' href='/manifest.json' />
+        <link rel='icon' type='image/png' sizes='192x192' href='/assets/generated/swipetrack-icon-192.dim_192x192.png' />
+        <link rel='icon' type='image/png' sizes='512x512' href='/assets/generated/swipetrack-icon.dim_512x512.png' />
+        <link rel='apple-touch-icon' sizes='180x180' href='/assets/generated/swipetrack-apple-touch-icon.dim_180x180.png' />
         <link rel='preconnect' href='https://fonts.googleapis.com' />
         <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
         <link href='https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap' rel='stylesheet' />
-        <link rel='icon' type='image/png' href='/assets/generated/swipetrack-icon.dim_256x256.png' />
-        <link rel='apple-touch-icon' href='/assets/generated/swipetrack-icon.dim_256x256.png' />
         <title>SwipeTrack Pro</title>
-      <script type="module" crossorigin src="/assets/index-Cmm9I-jD.js"></script>
-      <link rel="stylesheet" crossorigin href="/assets/index-0w-VPUj5.css">
+      <script type="module" crossorigin src="/assets/index-B_FRflNS.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/index-zSW9cXZ2.css">
     </head>
     <body>
         <div id='root'></div>
+        <script>
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+              navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                console.log('SW registration failed: ', err);
+              });
+            });
+          }
+        </script>
     </body>
 </html>

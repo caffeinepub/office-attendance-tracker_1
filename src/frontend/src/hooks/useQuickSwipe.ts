@@ -46,6 +46,7 @@ export function useQuickSwipe(onSuccess?: (message: string) => void) {
       swipeOut: isSwipeIn ? "" : timeStr,
       breakfastAtOffice: false,
       leaveType: LeaveType.noLeave,
+      holidayWorking: false,
     };
   };
 

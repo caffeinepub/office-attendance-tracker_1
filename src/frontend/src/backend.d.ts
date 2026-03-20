@@ -19,6 +19,7 @@ export interface SwipeResponse {
 export interface AttendanceRecord {
     swipeIn: string;
     date: string;
+    holidayWorking: boolean;
     breakfastAtOffice: boolean;
     swipeOut: string;
     leaveType: LeaveType;

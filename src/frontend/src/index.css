@@ -4,95 +4,102 @@
 
 @layer base {
   :root {
-    --radius: 0.875rem;
+    --radius: 0.75rem;
 
-    /* Light mode — Apple-style: clean white, vibrant blue primary */
-    --background: 1 0 0;
-    --foreground: 0.12 0.02 265;
-    --card: 0.99 0.003 255;
-    --card-foreground: 0.12 0.02 265;
+    /* iOS systemGroupedBackground */
+    --background: 0.955 0.004 264;
+    /* iOS secondarySystemGroupedBackground (white cards) */
+    --card: 1 0 0;
+    --card-foreground: 0.09 0.005 265;
     --popover: 1 0 0;
-    --popover-foreground: 0.12 0.02 265;
-    --primary: 0.55 0.28 255;
+    --popover-foreground: 0.09 0.005 265;
+    /* iOS foreground / label */
+    --foreground: 0.09 0.005 265;
+    /* iOS systemBlue #007AFF */
+    --primary: 0.59 0.2 255;
     --primary-foreground: 1 0 0;
-    --secondary: 0.94 0.015 255;
-    --secondary-foreground: 0.22 0.02 265;
-    --muted: 0.93 0.01 255;
-    --muted-foreground: 0.48 0.02 265;
-    --accent: 0.55 0.28 255;
+    /* iOS secondarySystemFill / grouped list background */
+    --secondary: 0.945 0.005 264;
+    --secondary-foreground: 0.22 0.005 265;
+    /* iOS tertiarySystemGroupedBackground */
+    --muted: 0.945 0.004 264;
+    --muted-foreground: 0.52 0.01 265;
+    --accent: 0.59 0.2 255;
     --accent-foreground: 1 0 0;
-    --destructive: 0.56 0.24 25;
+    /* iOS systemRed #FF3B30 */
+    --destructive: 0.58 0.24 25;
     --destructive-foreground: 1 0 0;
-    --border: 0.88 0.015 255;
-    --input: 0.88 0.015 255;
-    --ring: 0.55 0.28 255;
-
-    /* Status colors — Apple green & red */
-    --success: 0.56 0.2 145;
+    /* iOS separator */
+    --border: 0.87 0.006 264;
+    --input: 0.93 0.006 264;
+    --ring: 0.59 0.2 255;
+    /* iOS systemGreen #34C759 */
+    --success: 0.7 0.22 145;
     --success-foreground: 1 0 0;
-    --warning: 0.7 0.22 55;
-    --warning-foreground: 0.12 0.02 265;
+    /* iOS systemOrange #FF9500 */
+    --warning: 0.75 0.2 55;
+    --warning-foreground: 0.09 0.005 265;
 
-    /* Chart colors */
-    --chart-1: 0.55 0.28 255;
-    --chart-2: 0.56 0.2 145;
-    --chart-3: 0.62 0.22 200;
-    --chart-4: 0.7 0.22 55;
-    --chart-5: 0.56 0.24 25;
+    /* Chart */
+    --chart-1: 0.59 0.2 255;
+    --chart-2: 0.7 0.22 145;
+    --chart-3: 0.65 0.18 200;
+    --chart-4: 0.75 0.2 55;
+    --chart-5: 0.58 0.24 25;
 
-    --sidebar: 0.97 0.008 255;
-    --sidebar-foreground: 0.12 0.02 265;
-    --sidebar-primary: 0.55 0.28 255;
+    --sidebar: 0.955 0.004 264;
+    --sidebar-foreground: 0.09 0.005 265;
+    --sidebar-primary: 0.59 0.2 255;
     --sidebar-primary-foreground: 1 0 0;
-    --sidebar-accent: 0.94 0.015 255;
-    --sidebar-accent-foreground: 0.22 0.02 265;
-    --sidebar-border: 0.88 0.015 255;
-    --sidebar-ring: 0.55 0.28 255;
+    --sidebar-accent: 0.945 0.005 264;
+    --sidebar-accent-foreground: 0.22 0.005 265;
+    --sidebar-border: 0.87 0.006 264;
+    --sidebar-ring: 0.59 0.2 255;
   }
 
   .dark {
-    /* Dark mode — Apple dark: deep slate with vibrant blue */
-    --background: 0.1 0.015 265;
-    --foreground: 0.97 0.008 255;
-    --card: 0.15 0.018 265;
-    --card-foreground: 0.97 0.008 255;
-    --popover: 0.18 0.018 265;
-    --popover-foreground: 0.97 0.008 255;
-    --primary: 0.68 0.26 255;
-    --primary-foreground: 0.08 0.01 265;
-    --secondary: 0.2 0.018 265;
-    --secondary-foreground: 0.9 0.008 255;
-    --muted: 0.2 0.018 265;
-    --muted-foreground: 0.62 0.015 265;
-    --accent: 0.68 0.26 255;
-    --accent-foreground: 0.08 0.01 265;
-    --destructive: 0.68 0.24 25;
-    --destructive-foreground: 0.08 0.01 265;
-    --border: 0.26 0.018 265;
-    --input: 0.26 0.018 265;
-    --ring: 0.68 0.26 255;
-
-    /* Status colors */
-    --success: 0.68 0.22 145;
-    --success-foreground: 0.08 0.01 265;
+    /* iOS dark systemGroupedBackground #1C1C1E */
+    --background: 0.14 0.005 265;
+    /* iOS dark secondarySystemGroupedBackground #2C2C2E */
+    --card: 0.2 0.006 265;
+    --card-foreground: 0.97 0.004 255;
+    --popover: 0.2 0.006 265;
+    --popover-foreground: 0.97 0.004 255;
+    --foreground: 0.97 0.004 255;
+    /* iOS dark systemBlue #0A84FF */
+    --primary: 0.62 0.22 255;
+    --primary-foreground: 0.09 0.005 265;
+    /* iOS dark tertiarySystemGroupedBackground #3A3A3C */
+    --secondary: 0.27 0.006 265;
+    --secondary-foreground: 0.87 0.005 255;
+    --muted: 0.27 0.006 265;
+    --muted-foreground: 0.6 0.008 265;
+    --accent: 0.62 0.22 255;
+    --accent-foreground: 0.09 0.005 265;
+    --destructive: 0.64 0.24 25;
+    --destructive-foreground: 0.97 0.004 255;
+    --border: 0.3 0.007 265;
+    --input: 0.27 0.006 265;
+    --ring: 0.62 0.22 255;
+    --success: 0.7 0.22 145;
+    --success-foreground: 0.09 0.005 265;
     --warning: 0.78 0.2 55;
-    --warning-foreground: 0.08 0.01 265;
+    --warning-foreground: 0.09 0.005 265;
 
-    /* Chart colors */
-    --chart-1: 0.68 0.26 255;
-    --chart-2: 0.68 0.22 145;
-    --chart-3: 0.65 0.22 200;
+    --chart-1: 0.62 0.22 255;
+    --chart-2: 0.7 0.22 145;
+    --chart-3: 0.65 0.18 200;
     --chart-4: 0.78 0.2 55;
-    --chart-5: 0.68 0.24 25;
+    --chart-5: 0.64 0.24 25;
 
-    --sidebar: 0.15 0.018 265;
-    --sidebar-foreground: 0.97 0.008 255;
-    --sidebar-primary: 0.68 0.26 255;
-    --sidebar-primary-foreground: 0.08 0.01 265;
-    --sidebar-accent: 0.2 0.018 265;
-    --sidebar-accent-foreground: 0.9 0.008 255;
-    --sidebar-border: 0.26 0.018 265;
-    --sidebar-ring: 0.68 0.26 255;
+    --sidebar: 0.14 0.005 265;
+    --sidebar-foreground: 0.97 0.004 255;
+    --sidebar-primary: 0.62 0.22 255;
+    --sidebar-primary-foreground: 0.09 0.005 265;
+    --sidebar-accent: 0.27 0.006 265;
+    --sidebar-accent-foreground: 0.87 0.005 255;
+    --sidebar-border: 0.3 0.007 265;
+    --sidebar-ring: 0.62 0.22 255;
   }
 
   * {
@@ -105,10 +112,12 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, "SF Pro Text",
+      BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior: none;
+    font-size: 17px;
   }
 
   html.dark {
@@ -117,21 +126,212 @@
 }
 
 @layer components {
+  /* ── iOS Card (inset grouped list style) ──────────────────── */
+  .ios-card {
+    background-color: oklch(var(--card));
+    color: oklch(var(--card-foreground));
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .ios-card {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Keep app-card as alias */
   .app-card {
-    @apply bg-card text-card-foreground rounded-2xl border;
-    border-color: oklch(var(--border) / 0.5);
-    box-shadow: 0 1px 4px oklch(0.5 0.05 255 / 0.08), 0 0 0 0.5px
-      oklch(var(--border) / 0.3);
+    background-color: oklch(var(--card));
+    color: oklch(var(--card-foreground));
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .app-card {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   }
 
   .app-card-elevated {
-    @apply bg-card text-card-foreground rounded-2xl border;
-    border-color: oklch(var(--border) / 0.3);
-    box-shadow: 0 4px 24px oklch(0.5 0.1 255 / 0.12), 0 1px 4px
-      oklch(0.5 0.05 255 / 0.08);
+    background-color: oklch(var(--card));
+    color: oklch(var(--card-foreground));
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
   }
 
-  /* Vivid status text utilities */
+  /* ── iOS Section Header (uppercase gray label above card) ── */
+  .ios-section-header {
+    font-size: 13px;
+    font-weight: 400;
+    color: oklch(var(--muted-foreground));
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 6px 4px 6px 4px;
+  }
+
+  /* ── iOS Row inside a card ───────────────────────────────── */
+  .ios-row {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+  }
+
+  /* Hairline separator between rows (inset from left) */
+  .ios-row + .ios-row {
+    border-top: 0.5px solid oklch(var(--border) / 0.5);
+  }
+
+  /* ── iOS Segmented Control ──────────────────────────────── */
+  .ios-segmented {
+    display: flex;
+    background-color: oklch(var(--secondary));
+    border-radius: 9px;
+    padding: 2px;
+    gap: 0;
+  }
+
+  .ios-segment {
+    flex: 1;
+    height: 32px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 400;
+    color: oklch(var(--foreground));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    border: none;
+    background: transparent;
+  }
+
+  .ios-segment[data-active="true"] {
+    background-color: oklch(var(--card));
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    color: oklch(var(--foreground));
+  }
+
+  /* ── iOS Nav Bar ─────────────────────────────────────────── */
+  .ios-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: rgba(242, 242, 247, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 0.5px solid rgba(60, 60, 67, 0.18);
+  }
+
+  .dark .ios-navbar {
+    background: rgba(28, 28, 30, 0.85);
+    border-bottom: 0.5px solid rgba(84, 84, 88, 0.5);
+  }
+
+  /* ── iOS Tab Bar ─────────────────────────────────────────── */
+  .ios-tabbar {
+    position: fixed;
+    bottom: 0;
+    z-index: 40;
+    width: 100%;
+    max-width: 448px;
+    background: rgba(242, 242, 247, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 0.5px solid rgba(60, 60, 67, 0.18);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .dark .ios-tabbar {
+    background: rgba(28, 28, 30, 0.85);
+    border-top: 0.5px solid rgba(84, 84, 88, 0.5);
+  }
+
+  /* ── iOS Typography Scale ────────────────────────────────── */
+  .ios-large-title {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  .ios-title1 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.25;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  .ios-title2 {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  .ios-title3 {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.35;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  }
+
+  .ios-headline {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .ios-body {
+    font-size: 17px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  .ios-callout {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .ios-subhead {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .ios-footnote {
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .ios-caption1 {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  .ios-caption2 {
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.3;
+  }
+
+  /* ── Display numbers use Bricolage Grotesque ─────────────── */
+  .ios-number {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 700;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Status utilities ────────────────────────────────────── */
   .text-success {
     color: oklch(var(--success));
   }
@@ -152,22 +352,16 @@
     color: oklch(var(--destructive));
   }
 
-  .gradient-primary {
-    background: linear-gradient(
-      135deg,
-      oklch(var(--primary)) 0%,
-      oklch(0.58 0.3 270) 100%
-    );
+  /* ── Input fill background ───────────────────────────────── */
+  .ios-input-fill {
+    background-color: rgba(118, 118, 128, 0.12);
   }
 
-  .gradient-card {
-    background: linear-gradient(
-      135deg,
-      oklch(var(--card)) 0%,
-      oklch(var(--secondary)) 100%
-    );
+  .dark .ios-input-fill {
+    background-color: rgba(118, 118, 128, 0.24);
   }
 
+  /* ── Misc utilities ──────────────────────────────────────── */
   .bottom-nav-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -179,7 +373,7 @@
   @keyframes pageEnter {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
@@ -190,6 +384,14 @@
   .tap-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(
+      135deg,
+      oklch(var(--primary)) 0%,
+      oklch(0.6 0.24 270) 100%
+    );
   }
 
   @keyframes pulse-dot {
@@ -206,6 +408,61 @@
     animation: pulse-dot 1.5s ease-in-out infinite;
   }
 
+  /* ── Apple Calendar Overlay ─────────────────────────────── */
+  .apple-cal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.28s ease-out;
+  }
+
+  .apple-cal-overlay--visible {
+    opacity: 1;
+  }
+
+  .apple-cal-card {
+    width: 100%;
+    max-width: 480px;
+    background-color: oklch(var(--card));
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.18);
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+  }
+
+  .apple-cal-card--visible {
+    transform: translateY(0);
+  }
+
+  .apple-cal-selected {
+    background-color: oklch(var(--primary));
+    color: #fff;
+  }
+
+  .apple-cal-today-dot {
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: oklch(var(--primary));
+  }
+
+  .dark .apple-cal-card {
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Shimmer ─────────────────────────────────────────────── */
   @keyframes shimmer {
     0% {
       background-position: -200% 0;
@@ -225,63 +482,21 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
+}
 
-  /* ── Apple Calendar Overlay ─────────────────────────────── */
-  .apple-cal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
+@layer components {
+  /* UI Craft fixes */
+  /* Ensure tab bar inner content is 49px tall */
+  .ios-tabbar-inner {
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    opacity: 0;
-    transition: opacity 0.3s ease-out;
-    /* touch-action intentionally omitted — letting child day buttons receive touch events */
+    align-items: center;
+    justify-content: space-around;
+    height: 49px;
+    padding: 0 4px;
   }
 
-  .apple-cal-overlay--visible {
-    opacity: 1;
-  }
-
-  .apple-cal-card {
-    width: 100%;
-    max-width: 480px;
-    background-color: oklch(var(--card));
-    border-radius: 24px 24px 0 0;
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18), 0 -2px 8px rgba(0, 0, 0, 0.08);
-    transform: translateY(100%);
-    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-    will-change: transform;
-    opacity: 1;
-  }
-
-  .apple-cal-card--visible {
-    transform: translateY(0);
-  }
-
-  .apple-cal-selected {
-    background-color: oklch(var(--primary));
-    color: oklch(var(--primary-foreground));
-  }
-
-  .apple-cal-selected:hover {
-    background-color: oklch(var(--primary) / 0.9);
-  }
-
-  .apple-cal-today {
-    color: oklch(var(--primary));
-    font-weight: 700;
-  }
-
-  .apple-cal-today:hover {
-    background-color: oklch(var(--secondary));
-  }
-
-  .dark .apple-cal-card {
-    background-color: oklch(var(--card));
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3);
+  /* Active press state on cards/rows */
+  .ios-pressable:active {
+    opacity: 0.7;
   }
 }

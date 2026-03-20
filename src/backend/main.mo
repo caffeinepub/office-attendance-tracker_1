@@ -30,6 +30,7 @@ actor {
     swipeOut : Text;
     breakfastAtOffice : Bool;
     leaveType : LeaveType;
+    holidayWorking : Bool; // New field added
   };
 
   type UserProfile = {
@@ -172,6 +173,7 @@ actor {
               swipeOut = "";
               breakfastAtOffice = false;
               leaveType = #noLeave;
+              holidayWorking = false; // Default value for new field
             };
           };
           case (false) {

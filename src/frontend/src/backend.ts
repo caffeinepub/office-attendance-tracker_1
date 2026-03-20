@@ -108,6 +108,7 @@ export interface _CaffeineStorageCreateCertificateResult {
 export interface AttendanceRecord {
     swipeIn: string;
     date: string;
+    holidayWorking: boolean;
     breakfastAtOffice: boolean;
     swipeOut: string;
     leaveType: LeaveType;
@@ -448,12 +449,14 @@ function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     swipeIn: string;
     date: string;
+    holidayWorking: boolean;
     breakfastAtOffice: boolean;
     swipeOut: string;
     leaveType: _LeaveType;
 }): {
     swipeIn: string;
     date: string;
+    holidayWorking: boolean;
     breakfastAtOffice: boolean;
     swipeOut: string;
     leaveType: LeaveType;
@@ -461,6 +464,7 @@ function from_candid_record_n12(_uploadFile: (file: ExternalBlob) => Promise<Uin
     return {
         swipeIn: value.swipeIn,
         date: value.date,
+        holidayWorking: value.holidayWorking,
         breakfastAtOffice: value.breakfastAtOffice,
         swipeOut: value.swipeOut,
         leaveType: from_candid_LeaveType_n13(_uploadFile, _downloadFile, value.leaveType)
@@ -519,12 +523,14 @@ function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Arra
 function to_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     swipeIn: string;
     date: string;
+    holidayWorking: boolean;
     breakfastAtOffice: boolean;
     swipeOut: string;
     leaveType: LeaveType;
 }): {
     swipeIn: string;
     date: string;
+    holidayWorking: boolean;
     breakfastAtOffice: boolean;
     swipeOut: string;
     leaveType: _LeaveType;
@@ -532,6 +538,7 @@ function to_candid_record_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8
     return {
         swipeIn: value.swipeIn,
         date: value.date,
+        holidayWorking: value.holidayWorking,
         breakfastAtOffice: value.breakfastAtOffice,
         swipeOut: value.swipeOut,
         leaveType: to_candid_LeaveType_n21(_uploadFile, _downloadFile, value.leaveType)

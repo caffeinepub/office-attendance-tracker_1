@@ -1,0 +1,52 @@
+{
+  "name": "SwipeTrack Pro",
+  "short_name": "SwipeTrack",
+  "description": "Smart office attendance tracking with swipe-in/out logging, leave management, analytics, and export.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0a5ae0",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/assets/generated/swipetrack-icon-48.dim_48x48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/swipetrack-icon-96.dim_96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/swipetrack-icon-144.dim_144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/swipetrack-icon-192.dim_192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/swipetrack-icon.dim_256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/swipetrack-icon.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/generated/swipetrack-icon-maskable.dim_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

@@ -1,6 +1,5 @@
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { addDays, format } from "date-fns";
 import {
   AlertTriangle,
@@ -8,12 +7,14 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Star,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
 import type React from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { AttendanceRecord, LeaveType } from "../backend";
+import { useHolidays } from "../hooks/useHolidays";
 import { useGetRecordsByDateRange } from "../hooks/useQueries";
 import {
   DEFAULT_WEEKLY_TARGET,
@@ -50,56 +51,34 @@ function toCalcRecord(r: AttendanceRecord) {
   };
 }
 
-interface StatCardProps {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: React.ReactNode;
-  accent?: boolean;
-}
-
-function StatCard({ label, value, sub, icon, accent }: StatCardProps) {
-  return (
-    <div
-      className={`app-card p-4 flex items-center gap-3 ${accent ? "border-primary/30" : ""}`}
-    >
-      <div
-        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${accent ? "bg-primary/10" : "bg-secondary"}`}
-      >
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground font-medium">{label}</p>
-        <p
-          className={`text-xl font-display font-bold leading-tight ${accent ? "text-primary" : "text-foreground"}`}
-        >
-          {value}
-        </p>
-        {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+type TabType = "today" | "week" | "month";
 
 export default function Dashboard() {
   const today = new Date();
   const todayKey = formatDateKey(today);
   const weekRange = getWeekRange(today);
   const monthRange = getMonthRange(today);
+  const [activeTab, setActiveTab] = useState<TabType>("today");
 
   const { data: weekRecords = [], isLoading: weekLoading } =
     useGetRecordsByDateRange(weekRange.start, weekRange.end);
   const { data: monthRecords = [], isLoading: monthLoading } =
     useGetRecordsByDateRange(monthRange.start, monthRange.end);
 
+  const { isHoliday, getHoliday, holidays } = useHolidays();
+
   const todayRecord = weekRecords.find((r) => r.date === todayKey);
 
-  // Week calculations
   const weekData = useMemo(() => {
     const calcRecords = weekRecords.map(toCalcRecord);
-    const target = calculateWeeklyTarget(calcRecords);
+    const baseTarget = calculateWeeklyTarget(calcRecords);
+    const holidayReduction =
+      holidays.filter(
+        (h) => h.date >= weekRange.start && h.date <= weekRange.end,
+      ).length * 510;
+    const target = Math.max(0, baseTarget - holidayReduction);
     const completed = calcRecords.reduce(
       (sum, r) => sum + calculateDailyHours(r),
       0,
@@ -107,18 +86,13 @@ export default function Dashboard() {
     const remaining = Math.max(0, target - completed);
     const deficit = completed < target ? target - completed : 0;
     const progress = target > 0 ? Math.min(100, (completed / target) * 100) : 0;
-
-    // Determine if on track: compare completed vs expected by today
-    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Mon=1, Sun=7
-    const workdaysPassed = Math.min(dayOfWeek, 5); // Mon-Fri
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
+    const workdaysPassed = Math.min(dayOfWeek, 5);
     const expectedByNow = (target / 5) * workdaysPassed;
     const onTrack = completed >= expectedByNow;
-
-    // Weekend hours
     const weekendHours = calcRecords
       .filter((r) => isWeekendDate(r.date))
       .reduce((sum, r) => sum + calculateDailyHours(r), 0);
-
     return {
       target,
       completed,
@@ -128,15 +102,14 @@ export default function Dashboard() {
       onTrack,
       weekendHours,
     };
-  }, [weekRecords, today]);
+  }, [weekRecords, today, holidays, weekRange.start, weekRange.end]);
 
-  // Build day-by-day week breakdown (Mon–Sun)
   const weekDays = useMemo(() => {
     const weekStart = getWeekStart(today);
     return DAY_LABELS.map((label, i) => {
       const date = addDays(weekStart, i);
       const dateKey = formatDateKey(date);
-      const isWeekend = i >= 5; // Sat=5, Sun=6
+      const isWeekend = i >= 5;
       const record = weekRecords.find((r) => r.date === dateKey);
       const calcRecord = record ? toCalcRecord(record) : null;
       const hours = calcRecord ? calculateDailyHours(calcRecord) : 0;
@@ -148,6 +121,8 @@ export default function Dashboard() {
         !!record,
       );
       const isToday = dateKey === todayKey;
+      const isHolidayDay = isHoliday(dateKey);
+      const holidayName = getHoliday(dateKey)?.name;
       return {
         label,
         date,
@@ -157,11 +132,12 @@ export default function Dashboard() {
         hours,
         indicator,
         isToday,
+        isHolidayDay,
+        holidayName,
       };
     });
-  }, [weekRecords, today, todayKey]);
+  }, [weekRecords, today, todayKey, isHoliday, getHoliday]);
 
-  // Month calculations
   const monthData = useMemo(() => {
     const calcRecords = monthRecords.map(toCalcRecord);
     const totalHours = calcRecords.reduce(
@@ -178,7 +154,6 @@ export default function Dashboard() {
     return { totalHours, workingDays, avgDaily };
   }, [monthRecords]);
 
-  // Today data
   const todayData = useMemo(() => {
     if (!todayRecord) return null;
     const calc = toCalcRecord(todayRecord);
@@ -193,379 +168,694 @@ export default function Dashboard() {
     return { hours, coreViolation, record: todayRecord, indicator };
   }, [todayRecord, todayKey]);
 
+  const TABS: { key: TabType; label: string }[] = [
+    { key: "today", label: "Today" },
+    { key: "week", label: "Week" },
+    { key: "month", label: "Month" },
+  ];
+
   return (
-    <div className="page-enter px-4 py-5 space-y-4">
+    <div className="page-enter px-4 pt-4 pb-6 space-y-4">
+      {/* Page header */}
       <div>
-        <h2 className="text-2xl font-display font-bold text-foreground">
+        <h2
+          className="ios-number"
+          style={{
+            fontSize: 34,
+            fontWeight: 700,
+            letterSpacing: "-0.5px",
+            color: "oklch(var(--foreground))",
+          }}
+        >
           Dashboard
         </h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p
+          style={{
+            fontSize: 15,
+            color: "oklch(var(--muted-foreground))",
+            marginTop: 2,
+          }}
+        >
           {format(today, "EEEE, MMMM d, yyyy")}
         </p>
       </div>
 
-      <Tabs defaultValue="today" className="w-full">
-        <TabsList className="w-full rounded-xl h-11 bg-secondary p-1">
-          <TabsTrigger
-            value="today"
-            className="flex-1 rounded-lg text-sm font-medium"
+      {/* iOS Segmented Control */}
+      <div className="ios-segmented">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className="ios-segment"
+            data-active={activeTab === tab.key ? "true" : "false"}
+            onClick={() => setActiveTab(tab.key)}
+            data-ocid={`dashboard.${tab.key}.tab`}
           >
-            Today
-          </TabsTrigger>
-          <TabsTrigger
-            value="week"
-            className="flex-1 rounded-lg text-sm font-medium"
-          >
-            Week
-          </TabsTrigger>
-          <TabsTrigger
-            value="month"
-            className="flex-1 rounded-lg text-sm font-medium"
-          >
-            Month
-          </TabsTrigger>
-        </TabsList>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* TODAY TAB */}
-        <TabsContent value="today" className="mt-4 space-y-3 animate-fade-in">
+      {/* TODAY TAB */}
+      {activeTab === "today" && (
+        <div className="space-y-4 animate-fade-in">
           {weekLoading ? (
             <div className="space-y-3">
-              <Skeleton className="h-24 rounded-2xl" />
-              <Skeleton className="h-20 rounded-2xl" />
+              <Skeleton className="h-24 rounded-xl" />
+              <Skeleton className="h-20 rounded-xl" />
             </div>
           ) : todayData ? (
             <>
               {/* Hours card */}
-              <div className="app-card p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-semibold text-muted-foreground">
-                    Today's Hours
-                  </p>
-                  <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      todayData.coreViolation
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-success/10 text-success"
-                    }`}
-                  >
-                    {todayData.coreViolation ? "Core Hours ⚠️" : "Core Hours ✓"}
-                  </span>
-                </div>
-                <div className="flex items-end gap-3">
-                  <p
-                    className={`text-5xl font-display font-bold ${
-                      todayData.indicator.color === "green"
-                        ? "text-success"
-                        : todayData.indicator.color === "red"
-                          ? "text-destructive"
-                          : "text-primary"
-                    }`}
-                  >
-                    {todayData.indicator.hoursDisplay}
-                  </p>
-                  {todayData.indicator.diffDisplay && (
-                    <span
-                      className={`text-base font-semibold mb-1 ${
-                        todayData.indicator.color === "green"
-                          ? "text-success"
-                          : "text-destructive"
-                      }`}
+              <div>
+                <p className="ios-section-header">Today&apos;s Hours</p>
+                <div className="ios-card overflow-hidden">
+                  <div className="px-4 py-4">
+                    <div className="flex items-end justify-between">
+                      <span
+                        className="ios-number"
+                        style={{
+                          fontSize: 48,
+                          lineHeight: 1,
+                          color:
+                            todayData.indicator.color === "green"
+                              ? "oklch(var(--success))"
+                              : todayData.indicator.color === "red"
+                                ? "oklch(var(--destructive))"
+                                : "oklch(var(--primary))",
+                        }}
+                      >
+                        {todayData.indicator.hoursDisplay}
+                      </span>
+                      {todayData.indicator.diffDisplay && (
+                        <span
+                          style={{
+                            fontSize: 17,
+                            fontWeight: 600,
+                            paddingBottom: 4,
+                            color:
+                              todayData.indicator.color === "green"
+                                ? "oklch(var(--success))"
+                                : "oklch(var(--destructive))",
+                          }}
+                        >
+                          {todayData.indicator.diffDisplay}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+
+                  {/* Swipe times */}
+                  <div className="flex">
+                    <div
+                      className="flex-1 px-4 py-3 border-r"
+                      style={{
+                        borderColor: "oklch(var(--border) / 0.4)",
+                        borderWidth: "0 0.5px 0 0",
+                      }}
                     >
-                      {todayData.indicator.diffDisplay}
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "oklch(var(--muted-foreground))",
+                          marginBottom: 2,
+                        }}
+                      >
+                        Swipe In
+                      </p>
+                      <p
+                        className="ios-number"
+                        style={{
+                          fontSize: 20,
+                          color: "oklch(var(--foreground))",
+                        }}
+                      >
+                        {todayData.record.swipeIn || "\u2014"}
+                      </p>
+                    </div>
+                    <div className="flex-1 px-4 py-3">
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "oklch(var(--muted-foreground))",
+                          marginBottom: 2,
+                        }}
+                      >
+                        Swipe Out
+                      </p>
+                      <p
+                        className="ios-number"
+                        style={{
+                          fontSize: 20,
+                          color: "oklch(var(--foreground))",
+                        }}
+                      >
+                        {todayData.record.swipeOut || "\u2014"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+
+                  {/* Leave & Breakfast */}
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Leave Type
                     </span>
-                  )}
-                </div>
-              </div>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 500,
+                        color: "oklch(var(--foreground))",
+                      }}
+                    >
+                      {getLeaveTypeLabel(
+                        leaveTypeToStr(
+                          todayData.record.leaveType as unknown as LeaveType,
+                        ),
+                      )}
+                    </span>
+                  </div>
 
-              {/* Swipe times */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="app-card p-4">
-                  <p className="text-xs text-muted-foreground font-medium mb-1">
-                    Swipe In
-                  </p>
-                  <p className="text-xl font-display font-bold text-foreground">
-                    {todayData.record.swipeIn || "—"}
-                  </p>
-                </div>
-                <div className="app-card p-4">
-                  <p className="text-xs text-muted-foreground font-medium mb-1">
-                    Swipe Out
-                  </p>
-                  <p className="text-xl font-display font-bold text-foreground">
-                    {todayData.record.swipeOut || "—"}
-                  </p>
-                </div>
-              </div>
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
 
-              {/* Leave & Breakfast */}
-              <div className="app-card p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Leave Type</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {getLeaveTypeLabel(
-                      leaveTypeToStr(
-                        todayData.record.leaveType as unknown as LeaveType,
-                      ),
-                    )}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Breakfast</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {todayData.record.breakfastAtOffice ? "Yes (+30m)" : "No"}
-                  </p>
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Breakfast
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 500,
+                        color: "oklch(var(--foreground))",
+                      }}
+                    >
+                      {todayData.record.breakfastAtOffice ? "Yes (+30m)" : "No"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {todayData.coreViolation && (
-                <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-                  <p className="text-xs font-medium text-destructive">
-                    Core hours requirement not met (9:30 AM – 4:00 PM)
+                <div
+                  className="flex items-start gap-2 rounded-xl px-3 py-3"
+                  style={{
+                    backgroundColor: "oklch(var(--destructive) / 0.08)",
+                  }}
+                >
+                  <AlertTriangle
+                    style={{
+                      width: 16,
+                      height: 16,
+                      color: "oklch(var(--destructive))",
+                      marginTop: 1,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <p
+                    style={{ fontSize: 13, color: "oklch(var(--destructive))" }}
+                  >
+                    Core hours requirement not met (9:30 AM \u2013 4:00 PM)
                   </p>
                 </div>
               )}
             </>
           ) : (
-            <div className="app-card p-8 flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
-                <Clock className="w-8 h-8 text-muted-foreground" />
+            <div className="ios-card flex flex-col items-center text-center py-10">
+              <div
+                className="flex items-center justify-center mb-4"
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  backgroundColor: "oklch(var(--secondary))",
+                }}
+              >
+                <Clock
+                  style={{
+                    width: 28,
+                    height: 28,
+                    color: "oklch(var(--muted-foreground))",
+                  }}
+                />
               </div>
-              <p className="text-base font-semibold text-foreground mb-1">
+              <p
+                style={{
+                  fontSize: 17,
+                  fontWeight: 600,
+                  color: "oklch(var(--foreground))",
+                }}
+              >
                 No entry for today
               </p>
-              <p className="text-sm text-muted-foreground">
-                Go to Today tab to log your attendance
+              <p
+                style={{
+                  fontSize: 15,
+                  color: "oklch(var(--muted-foreground))",
+                  marginTop: 4,
+                }}
+              >
+                Go to Today tab to log attendance
               </p>
             </div>
           )}
-        </TabsContent>
+        </div>
+      )}
 
-        {/* WEEK TAB */}
-        <TabsContent value="week" className="mt-4 space-y-3 animate-fade-in">
+      {/* WEEK TAB */}
+      {activeTab === "week" && (
+        <div className="space-y-4 animate-fade-in">
           {weekLoading ? (
             <div className="space-y-3">
-              <Skeleton className="h-32 rounded-2xl" />
-              <Skeleton className="h-24 rounded-2xl" />
+              <Skeleton className="h-32 rounded-xl" />
+              <Skeleton className="h-24 rounded-xl" />
             </div>
           ) : (
             <>
-              {/* Status indicator */}
-              <div
-                className={`app-card p-4 flex items-center gap-3 ${weekData.onTrack ? "border-success/30" : "border-destructive/30"}`}
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${weekData.onTrack ? "bg-success/10" : "bg-destructive/10"}`}
-                >
-                  {weekData.onTrack ? (
-                    <TrendingUp className="w-5 h-5 text-success" />
-                  ) : (
-                    <TrendingDown className="w-5 h-5 text-destructive" />
-                  )}
-                </div>
-                <div>
-                  <p
-                    className={`text-base font-display font-bold ${weekData.onTrack ? "text-success" : "text-destructive"}`}
-                  >
-                    {weekData.onTrack ? "On Track" : "Behind Schedule"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(weekRange.start), "MMM d")} –{" "}
-                    {format(new Date(weekRange.end), "MMM d")}
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress */}
-              <div className="app-card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Weekly Progress
-                  </span>
-                  <span className="text-sm font-bold text-foreground">
-                    {Math.round(weekData.progress)}%
-                  </span>
-                </div>
-                <Progress
-                  value={weekData.progress}
-                  className="h-3 rounded-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatHoursDisplay(weekData.completed)} done</span>
-                  <span>{formatHoursDisplay(weekData.target)} target</span>
-                </div>
-              </div>
-
-              {/* Stats grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard
-                  label="Completed"
-                  value={formatHoursDisplay(weekData.completed)}
-                  icon={<CheckCircle2 className="w-5 h-5 text-success" />}
-                  accent
-                />
-                <StatCard
-                  label="Remaining"
-                  value={formatHoursDisplay(weekData.remaining)}
-                  icon={<Clock className="w-5 h-5 text-primary" />}
-                />
-                <StatCard
-                  label="Weekly Target"
-                  value={formatHoursDisplay(weekData.target)}
-                  sub="adjusted for leaves"
-                  icon={<BarChart2 className="w-5 h-5 text-muted-foreground" />}
-                />
-                <StatCard
-                  label="Deficit"
-                  value={
-                    weekData.deficit > 0
-                      ? formatHoursDisplay(weekData.deficit)
-                      : "—"
-                  }
-                  icon={
-                    <TrendingDown className="w-5 h-5 text-muted-foreground" />
-                  }
-                />
-              </div>
-
-              {/* Day-by-day breakdown */}
-              <div className="app-card p-4 space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Day-by-Day
-                </p>
-                {weekDays.map((day) => (
-                  <div
-                    key={day.dateKey}
-                    className={`flex items-center justify-between rounded-xl px-3 py-2.5 ${
-                      day.isToday
-                        ? "bg-primary/10 border border-primary/20"
-                        : day.isWeekend
-                          ? "bg-secondary/50"
-                          : "hover:bg-secondary/60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-sm font-semibold w-8 ${
-                          day.isToday
-                            ? "text-primary"
-                            : day.isWeekend
-                              ? "text-muted-foreground"
-                              : "text-foreground"
-                        }`}
-                      >
-                        {day.label}
-                      </span>
-                      <span
-                        className={`text-xs ${day.isToday ? "text-primary/70" : "text-muted-foreground"}`}
-                      >
-                        {format(day.date, "d")}
-                      </span>
-                      {day.isToday && (
-                        <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                          Today
+              {/* Status + Progress */}
+              <div>
+                <p className="ios-section-header">Progress</p>
+                <div className="ios-card overflow-hidden">
+                  <div className="px-4 py-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {weekData.onTrack ? (
+                          <TrendingUp
+                            style={{
+                              width: 18,
+                              height: 18,
+                              color: "oklch(var(--success))",
+                            }}
+                          />
+                        ) : (
+                          <TrendingDown
+                            style={{
+                              width: 18,
+                              height: 18,
+                              color: "oklch(var(--destructive))",
+                            }}
+                          />
+                        )}
+                        <span
+                          style={{
+                            fontSize: 17,
+                            fontWeight: 600,
+                            color: weekData.onTrack
+                              ? "oklch(var(--success))"
+                              : "oklch(var(--destructive))",
+                          }}
+                        >
+                          {weekData.onTrack ? "On Track" : "Behind Schedule"}
                         </span>
-                      )}
-                      {day.isWeekend && (
-                        <span className="text-xs text-muted-foreground/60">
-                          Weekend
-                        </span>
-                      )}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 17,
+                          fontWeight: 700,
+                          color: "oklch(var(--foreground))",
+                        }}
+                      >
+                        {Math.round(weekData.progress)}%
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {day.record ? (
-                        <>
+                    <Progress
+                      value={weekData.progress}
+                      className="h-1.5 rounded-full"
+                    />
+                    <div className="flex justify-between mt-2">
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "oklch(var(--muted-foreground))",
+                        }}
+                      >
+                        {formatHoursDisplay(weekData.completed)} done
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: "oklch(var(--muted-foreground))",
+                        }}
+                      >
+                        {formatHoursDisplay(weekData.target)} target
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Completed
+                    </span>
+                    <span
+                      className="ios-number"
+                      style={{ fontSize: 17, color: "oklch(var(--success))" }}
+                    >
+                      {formatHoursDisplay(weekData.completed)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Remaining
+                    </span>
+                    <span
+                      className="ios-number"
+                      style={{ fontSize: 17, color: "oklch(var(--primary))" }}
+                    >
+                      {formatHoursDisplay(weekData.remaining)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Deficit
+                    </span>
+                    <span
+                      className="ios-number"
+                      style={{
+                        fontSize: 17,
+                        color:
+                          weekData.deficit > 0
+                            ? "oklch(var(--destructive))"
+                            : "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      {weekData.deficit > 0
+                        ? formatHoursDisplay(weekData.deficit)
+                        : "\u2014"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Day-by-day */}
+              <div>
+                <p className="ios-section-header">Day by Day</p>
+                <div className="ios-card overflow-hidden">
+                  {weekDays.map((day, idx) => (
+                    <div key={day.dateKey}>
+                      {idx > 0 && (
+                        <div
+                          style={{
+                            height: "0.5px",
+                            backgroundColor: "oklch(var(--border) / 0.4)",
+                            marginLeft: 16,
+                          }}
+                        />
+                      )}
+                      <div
+                        className="ios-row justify-between"
+                        style={{
+                          backgroundColor: day.isToday
+                            ? "oklch(var(--primary) / 0.06)"
+                            : "transparent",
+                        }}
+                        data-ocid={`dashboard.day.item.${idx + 1}`}
+                      >
+                        <div className="flex items-center gap-2">
                           <span
-                            className={`text-sm font-bold ${
-                              day.indicator.color === "green"
-                                ? "text-success"
-                                : day.indicator.color === "red"
-                                  ? "text-destructive"
-                                  : "text-muted-foreground"
-                            }`}
+                            style={{
+                              fontSize: 17,
+                              fontWeight: day.isToday ? 600 : 400,
+                              color: day.isToday
+                                ? "oklch(var(--primary))"
+                                : day.isWeekend
+                                  ? "oklch(var(--muted-foreground))"
+                                  : "oklch(var(--foreground))",
+                              width: 36,
+                            }}
                           >
-                            {day.indicator.hoursDisplay}
+                            {day.label}
                           </span>
-                          {day.indicator.diffDisplay && (
+                          <span
+                            style={{
+                              fontSize: 15,
+                              color: "oklch(var(--muted-foreground))",
+                            }}
+                          >
+                            {format(day.date, "d")}
+                          </span>
+                          {day.isToday && (
                             <span
-                              className={`text-xs font-semibold ${
-                                day.indicator.color === "green"
-                                  ? "text-success"
-                                  : "text-destructive"
-                              }`}
+                              className="px-1.5 py-0.5 rounded-full"
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                backgroundColor: "oklch(var(--primary))",
+                                color: "#fff",
+                              }}
                             >
-                              {day.indicator.diffDisplay}
+                              Today
                             </span>
                           )}
-                        </>
-                      ) : (
-                        <span className="text-sm text-muted-foreground/50">
-                          —
-                        </span>
-                      )}
+                          {day.isHolidayDay && (
+                            <span
+                              className="px-1.5 py-0.5 rounded-full"
+                              style={{
+                                fontSize: 11,
+                                backgroundColor: "oklch(var(--primary) / 0.1)",
+                                color: "oklch(var(--primary))",
+                              }}
+                            >
+                              Holiday
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {day.record ? (
+                            <>
+                              <span
+                                className="ios-number"
+                                style={{
+                                  fontSize: 15,
+                                  color:
+                                    day.indicator.color === "green"
+                                      ? "oklch(var(--success))"
+                                      : day.indicator.color === "red"
+                                        ? "oklch(var(--destructive))"
+                                        : "oklch(var(--muted-foreground))",
+                                }}
+                              >
+                                {day.indicator.hoursDisplay}
+                              </span>
+                              {day.indicator.diffDisplay && (
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color:
+                                      day.indicator.color === "green"
+                                        ? "oklch(var(--success))"
+                                        : "oklch(var(--destructive))",
+                                  }}
+                                >
+                                  {day.indicator.diffDisplay}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: 17,
+                                color: "oklch(var(--muted-foreground) / 0.4)",
+                              }}
+                            >
+                              \u2014
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* Weekend compensation */}
               {weekData.deficit > 0 && (
-                <div className="flex items-start gap-3 bg-warning/10 border border-warning/20 rounded-xl p-3">
-                  <Calendar className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-warning">
-                      You have {formatHoursDisplay(weekData.deficit)} deficit.
-                    </p>
-                    {weekData.weekendHours > 0 && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Weekend hours logged:{" "}
-                        {formatHoursDisplay(weekData.weekendHours)}
-                      </p>
-                    )}
-                  </div>
+                <div
+                  className="flex items-start gap-3 rounded-xl px-4 py-3"
+                  style={{ backgroundColor: "oklch(var(--warning) / 0.08)" }}
+                >
+                  <Calendar
+                    style={{
+                      width: 16,
+                      height: 16,
+                      color: "oklch(var(--warning))",
+                      marginTop: 1,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <p style={{ fontSize: 13, color: "oklch(var(--warning))" }}>
+                    You have {formatHoursDisplay(weekData.deficit)} deficit this
+                    week.
+                  </p>
                 </div>
               )}
             </>
           )}
-        </TabsContent>
+        </div>
+      )}
 
-        {/* MONTH TAB */}
-        <TabsContent value="month" className="mt-4 space-y-3 animate-fade-in">
+      {/* MONTH TAB */}
+      {activeTab === "month" && (
+        <div className="space-y-4 animate-fade-in">
           {monthLoading ? (
             <div className="space-y-3">
-              <Skeleton className="h-24 rounded-2xl" />
-              <Skeleton className="h-20 rounded-2xl" />
+              <Skeleton className="h-24 rounded-xl" />
+              <Skeleton className="h-20 rounded-xl" />
             </div>
           ) : (
             <>
-              <div className="app-card p-5">
-                <p className="text-xs text-muted-foreground font-medium mb-1">
-                  {format(today, "MMMM yyyy")} Total
+              <div>
+                <p className="ios-section-header">
+                  {format(today, "MMMM yyyy")}
                 </p>
-                <p className="text-5xl font-display font-bold text-primary">
-                  {formatHoursDisplay(monthData.totalHours)}
-                </p>
-              </div>
+                <div className="ios-card overflow-hidden">
+                  <div className="px-4 py-5">
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "oklch(var(--muted-foreground))",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Total Hours
+                    </p>
+                    <span
+                      className="ios-number"
+                      style={{
+                        fontSize: 48,
+                        lineHeight: 1,
+                        color: "oklch(var(--primary))",
+                      }}
+                    >
+                      {formatHoursDisplay(monthData.totalHours)}
+                    </span>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard
-                  label="Working Days"
-                  value={String(monthData.workingDays)}
-                  sub="days logged"
-                  icon={<Calendar className="w-5 h-5 text-primary" />}
-                  accent
-                />
-                <StatCard
-                  label="Avg Daily"
-                  value={formatHoursDisplay(monthData.avgDaily)}
-                  sub="per working day"
-                  icon={<BarChart2 className="w-5 h-5 text-muted-foreground" />}
-                />
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Working Days
+                    </span>
+                    <span
+                      className="ios-number"
+                      style={{
+                        fontSize: 17,
+                        color: "oklch(var(--foreground))",
+                      }}
+                    >
+                      {monthData.workingDays} days
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: "0.5px",
+                      backgroundColor: "oklch(var(--border) / 0.4)",
+                      marginLeft: 16,
+                    }}
+                  />
+                  <div className="ios-row justify-between">
+                    <span
+                      style={{
+                        fontSize: 15,
+                        color: "oklch(var(--muted-foreground))",
+                      }}
+                    >
+                      Avg Daily
+                    </span>
+                    <span
+                      className="ios-number"
+                      style={{
+                        fontSize: 17,
+                        color: "oklch(var(--foreground))",
+                      }}
+                    >
+                      {formatHoursDisplay(monthData.avgDaily)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 }

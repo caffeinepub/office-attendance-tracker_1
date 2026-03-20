@@ -13,6 +13,7 @@ import type { Principal } from '@icp-sdk/core/principal';
 export interface AttendanceRecord {
   'swipeIn' : string,
   'date' : string,
+  'holidayWorking' : boolean,
   'breakfastAtOffice' : boolean,
   'swipeOut' : string,
   'leaveType' : LeaveType,

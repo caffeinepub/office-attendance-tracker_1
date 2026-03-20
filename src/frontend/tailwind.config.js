@@ -18,8 +18,10 @@ export default {
         },
         extend: {
             fontFamily: {
-                sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-                display: ['Bricolage Grotesque', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                /* Plus Jakarta Sans as primary body font */
+                sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'SF Pro Text', 'BlinkMacSystemFont', 'sans-serif'],
+                /* Bricolage Grotesque for large display numbers */
+                display: ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
             },
             colors: {
                 border: 'oklch(var(--border))',
@@ -91,9 +93,9 @@ export default {
             },
             boxShadow: {
                 xs: '0 1px 2px 0 rgba(0,0,0,0.05)',
-                card: '0 2px 12px 0 rgba(0,0,0,0.06), 0 1px 3px 0 rgba(0,0,0,0.04)',
-                elevated: '0 8px 32px 0 rgba(0,0,0,0.1), 0 2px 8px 0 rgba(0,0,0,0.06)',
-                glow: '0 0 24px 0 oklch(0.55 0.24 255 / 0.3)',
+                card: '0 1px 3px rgba(0,0,0,0.08)',
+                elevated: '0 4px 20px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+                glow: '0 0 20px 0 oklch(0.59 0.2 255 / 0.28)',
             },
             keyframes: {
                 'accordion-down': {
@@ -116,8 +118,8 @@ export default {
             animation: {
                 'accordion-down': 'accordion-down 0.2s ease-out',
                 'accordion-up': 'accordion-up 0.2s ease-out',
-                'fade-in': 'fade-in 0.3s ease-out',
-                'slide-up': 'slide-up 0.35s ease-out',
+                'fade-in': 'fade-in 0.28s ease-out',
+                'slide-up': 'slide-up 0.32s ease-out',
             }
         }
     },
