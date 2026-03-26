@@ -124,7 +124,8 @@ export enum LeaveType {
     halfDayFirstHalf = "halfDayFirstHalf",
     noLeave = "noLeave",
     fullDayLeave = "fullDayLeave",
-    halfDaySecondHalf = "halfDaySecondHalf"
+    halfDaySecondHalf = "halfDaySecondHalf",
+    compOff = "compOff"
 }
 export enum UserRole {
     admin = "admin",
@@ -491,7 +492,7 @@ function from_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Ui
 } | {
     halfDaySecondHalf: null;
 }): LeaveType {
-    return "halfDayFirstHalf" in value ? LeaveType.halfDayFirstHalf : "noLeave" in value ? LeaveType.noLeave : "fullDayLeave" in value ? LeaveType.fullDayLeave : "halfDaySecondHalf" in value ? LeaveType.halfDaySecondHalf : value;
+    return "halfDayFirstHalf" in value ? LeaveType.halfDayFirstHalf : "noLeave" in value ? LeaveType.noLeave : "fullDayLeave" in value ? LeaveType.fullDayLeave : "halfDaySecondHalf" in value ? LeaveType.halfDaySecondHalf : "compOff" in value ? LeaveType.compOff : value;
 }
 function from_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
@@ -561,6 +562,8 @@ function to_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint
     fullDayLeave: null;
 } | {
     halfDaySecondHalf: null;
+} | {
+    compOff: null;
 } {
     return value == LeaveType.halfDayFirstHalf ? {
         halfDayFirstHalf: null
@@ -570,6 +573,8 @@ function to_candid_variant_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint
         fullDayLeave: null
     } : value == LeaveType.halfDaySecondHalf ? {
         halfDaySecondHalf: null
+    } : value == LeaveType.compOff ? {
+        compOff: null
     } : value;
 }
 function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {

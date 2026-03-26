@@ -31,7 +31,8 @@ export enum LeaveType {
     halfDayFirstHalf = "halfDayFirstHalf",
     noLeave = "noLeave",
     fullDayLeave = "fullDayLeave",
-    halfDaySecondHalf = "halfDaySecondHalf"
+    halfDaySecondHalf = "halfDaySecondHalf",
+    compOff = "compOff"
 }
 export enum UserRole {
     admin = "admin",

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { AttendanceRecord } from "../backend";
-import { LeaveType } from "../backend";
+import { getTotalCompOffUsed } from "../utils/compOffLeaves";
 import { calculateDailyHours } from "../utils/hoursCalculation";
 import type { Holiday } from "./useHolidays";
 
@@ -58,10 +58,14 @@ export function useCompOff(
       .filter((e) => e.expiresOn >= today);
   }, [allRecords, holidayDates]);
 
-  const balance = useMemo(
+  const earnedBalance = useMemo(
     () => entries.reduce((sum, e) => sum + e.compOff, 0),
     [entries],
   );
 
-  return { balance, entries };
+  // Subtract comp off days already used as leave
+  const totalUsed = getTotalCompOffUsed();
+  const balance = Math.max(0, earnedBalance - totalUsed);
+
+  return { balance, earnedBalance, totalUsed, entries };
 }

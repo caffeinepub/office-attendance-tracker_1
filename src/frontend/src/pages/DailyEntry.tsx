@@ -39,6 +39,15 @@ import {
   useSaveRecord,
 } from "../hooks/useQueries";
 import {
+  addCompOffDate,
+  getCompOffSubType,
+  isCompOffDate,
+  removeCompOffDate,
+  removeCompOffUsage,
+  setCompOffSubType,
+  setCompOffUsage,
+} from "../utils/compOffLeaves";
+import {
   calculateDailyHours,
   calculateWeeklyTarget,
   checkCoreHoursViolation,
@@ -52,21 +61,52 @@ import {
   parseTime,
 } from "../utils/hoursCalculation";
 
-const LEAVE_OPTIONS: { value: LeaveType; label: string }[] = [
+const LEAVE_OPTIONS: { value: string; label: string; group?: string }[] = [
   { value: LeaveType.noLeave, label: "No Leave" },
   { value: LeaveType.halfDayFirstHalf, label: "Half-Day \u2013 First Half" },
   { value: LeaveType.halfDaySecondHalf, label: "Half-Day \u2013 Second Half" },
   { value: LeaveType.fullDayLeave, label: "Full-Day Leave" },
+  {
+    value: "compOffFull",
+    label: "Comp Off \u2013 Full Day",
+    group: "Comp Off",
+  },
+  {
+    value: "compOffFirstHalf",
+    label: "Comp Off \u2013 First Half",
+    group: "Comp Off",
+  },
+  {
+    value: "compOffSecondHalf",
+    label: "Comp Off \u2013 Second Half",
+    group: "Comp Off",
+  },
 ];
 
 function leaveTypeToStr(
-  lt: LeaveType,
-): "noLeave" | "halfDayFirstHalf" | "halfDaySecondHalf" | "fullDayLeave" {
-  return lt as unknown as
+  lt: string,
+):
+  | "noLeave"
+  | "halfDayFirstHalf"
+  | "halfDaySecondHalf"
+  | "fullDayLeave"
+  | "compOff"
+  | "compOffFull"
+  | "compOffFirstHalf"
+  | "compOffSecondHalf" {
+  if (
+    lt === "compOffFull" ||
+    lt === "compOffFirstHalf" ||
+    lt === "compOffSecondHalf"
+  ) {
+    return lt as "compOffFull" | "compOffFirstHalf" | "compOffSecondHalf";
+  }
+  return lt as
     | "noLeave"
     | "halfDayFirstHalf"
     | "halfDaySecondHalf"
-    | "fullDayLeave";
+    | "fullDayLeave"
+    | "compOff";
 }
 
 const ONE_PM_MINS = 13 * 60;
@@ -75,17 +115,17 @@ const WORK_WINDOW_END_MINS = 19 * 60;
 
 function calcAutoSwipeOut(
   swipeInStr: string,
-  lt: LeaveType,
+  lt: string,
   hasBreakfast: boolean,
 ): string {
   if (!swipeInStr) return "";
   const swipeInMins = parseTime(swipeInStr);
-  if (lt === LeaveType.noLeave) {
+  if (lt === LeaveType.noLeave || lt === "noLeave") {
     const rawMinutes = 8 * 60 + 30 + 30 - (hasBreakfast ? 30 : 0);
     const predictedOut = swipeInMins + rawMinutes;
     return formatMinutes(Math.min(predictedOut, WORK_WINDOW_END_MINS));
   }
-  if (lt === LeaveType.halfDaySecondHalf) {
+  if (lt === LeaveType.halfDaySecondHalf || lt === "compOffSecondHalf") {
     return formatMinutes(HALF_PAST_12_MINS);
   }
   return "";
@@ -98,7 +138,7 @@ export default function DailyEntry() {
   const [swipeIn, setSwipeIn] = useState("");
   const [swipeOut, setSwipeOut] = useState("");
   const [breakfast, setBreakfast] = useState(false);
-  const [leaveType, setLeaveType] = useState<LeaveType>(LeaveType.noLeave);
+  const [leaveType, setLeaveType] = useState<string>(LeaveType.noLeave);
   const [swipeOutManual, setSwipeOutManual] = useState(false);
   const [holidayWorking, setHolidayWorking] = useState(false);
 
@@ -120,7 +160,15 @@ export default function DailyEntry() {
       setSwipeIn(existingRecord.swipeIn || "");
       setSwipeOut(existingRecord.swipeOut || "");
       setBreakfast(existingRecord.breakfastAtOffice);
-      setLeaveType(existingRecord.leaveType as unknown as LeaveType);
+      let loadedLeaveType: string =
+        existingRecord.leaveType as unknown as string;
+      if (isCompOffDate(existingRecord.date)) {
+        const sub = getCompOffSubType(existingRecord.date);
+        if (sub === "firstHalf") loadedLeaveType = "compOffFirstHalf";
+        else if (sub === "secondHalf") loadedLeaveType = "compOffSecondHalf";
+        else loadedLeaveType = "compOffFull";
+      }
+      setLeaveType(loadedLeaveType);
       setSwipeOutManual(true);
       setHolidayWorking(existingRecord.holidayWorking ?? false);
     } else if (!recordLoading) {
@@ -141,7 +189,10 @@ export default function DailyEntry() {
   }, [swipeIn, leaveType, breakfast, swipeOutManual]);
 
   useEffect(() => {
-    if (leaveType === LeaveType.halfDayFirstHalf) {
+    if (
+      leaveType === LeaveType.halfDayFirstHalf ||
+      leaveType === "compOffFirstHalf"
+    ) {
       setSwipeIn("13:00");
       setSwipeOutManual(false);
     }
@@ -224,7 +275,10 @@ export default function DailyEntry() {
   const dailyHours = calculateDailyHours(currentRecord);
   const coreViolation = checkCoreHoursViolation(currentRecord);
   const isWeekendDay = isWeekendDate(dateKey);
-  const isFullDayLeave = leaveType === LeaveType.fullDayLeave;
+  const isFullDayLeave =
+    leaveType === LeaveType.fullDayLeave ||
+    leaveType === LeaveType.compOff ||
+    leaveType === "compOffFull";
 
   const holidayWorkingHours = useMemo(() => {
     if (!todayIsHoliday || !holidayWorking || (!swipeIn && !swipeOut))
@@ -266,19 +320,31 @@ export default function DailyEntry() {
   }, [holidayWorkingHours]);
 
   const showFirstHalfWarning = useMemo(() => {
-    if (leaveType !== LeaveType.halfDayFirstHalf) return false;
+    if (
+      leaveType !== LeaveType.halfDayFirstHalf &&
+      leaveType !== "compOffFirstHalf"
+    )
+      return false;
     if (!swipeIn) return false;
     return parseTime(swipeIn) > ONE_PM_MINS;
   }, [leaveType, swipeIn]);
 
   const showSecondHalfError = useMemo(() => {
-    if (leaveType !== LeaveType.halfDaySecondHalf) return false;
+    if (
+      leaveType !== LeaveType.halfDaySecondHalf &&
+      leaveType !== "compOffSecondHalf"
+    )
+      return false;
     if (!swipeOut) return false;
     return parseTime(swipeOut) < HALF_PAST_12_MINS;
   }, [leaveType, swipeOut]);
 
   const showBreakfastCompensationNote = useMemo(() => {
-    return leaveType === LeaveType.halfDaySecondHalf && breakfast;
+    return (
+      (leaveType === LeaveType.halfDaySecondHalf ||
+        leaveType === "compOffSecondHalf") &&
+      breakfast
+    );
   }, [leaveType, breakfast]);
 
   const hoursIndicator = useMemo(() => {
@@ -294,14 +360,45 @@ export default function DailyEntry() {
   const swipeFieldsDisabled = todayIsHoliday && !holidayWorking;
 
   const handleSave = async () => {
+    // comp off types are frontend-only; map to backend leave types
+    let backendLeaveType: LeaveType = leaveType as unknown as LeaveType;
+    if (leaveType === LeaveType.compOff || leaveType === "compOffFull") {
+      backendLeaveType = LeaveType.fullDayLeave;
+    } else if (leaveType === "compOffFirstHalf") {
+      backendLeaveType = LeaveType.halfDayFirstHalf;
+    } else if (leaveType === "compOffSecondHalf") {
+      backendLeaveType = LeaveType.halfDaySecondHalf;
+    }
     const record: AttendanceRecord = {
       date: dateKey,
       swipeIn: swipeFieldsDisabled ? "" : swipeIn,
       swipeOut: swipeFieldsDisabled ? "" : swipeOut,
       breakfastAtOffice: swipeFieldsDisabled ? false : breakfast,
-      leaveType: leaveType as unknown as LeaveType,
+      leaveType: backendLeaveType as unknown as LeaveType,
       holidayWorking: todayIsHoliday ? holidayWorking : false,
     };
+    // Track comp off dates and sub-types in localStorage
+    const isCompOffType =
+      leaveType === LeaveType.compOff ||
+      leaveType === "compOffFull" ||
+      leaveType === "compOffFirstHalf" ||
+      leaveType === "compOffSecondHalf";
+    if (isCompOffType) {
+      addCompOffDate(dateKey);
+      if (leaveType === "compOffFirstHalf") {
+        setCompOffSubType(dateKey, "firstHalf");
+        setCompOffUsage(dateKey, 0.5);
+      } else if (leaveType === "compOffSecondHalf") {
+        setCompOffSubType(dateKey, "secondHalf");
+        setCompOffUsage(dateKey, 0.5);
+      } else {
+        setCompOffSubType(dateKey, "full");
+        setCompOffUsage(dateKey, 1.0);
+      }
+    } else {
+      removeCompOffDate(dateKey);
+      removeCompOffUsage(dateKey);
+    }
     try {
       await saveRecord.mutateAsync(record);
       toast.success("Record saved successfully!", {
@@ -537,7 +634,8 @@ export default function DailyEntry() {
                 >
                   Swipe In
                 </Label>
-                {leaveType === LeaveType.halfDayFirstHalf ? (
+                {leaveType === LeaveType.halfDayFirstHalf ||
+                leaveType === "compOffFirstHalf" ? (
                   <div
                     className="flex items-center gap-1"
                     style={{ color: "oklch(var(--primary))" }}
@@ -562,14 +660,18 @@ export default function DailyEntry() {
                 type="time"
                 value={swipeIn}
                 onChange={(e) => handleSwipeInChange(e.target.value)}
-                disabled={leaveType === LeaveType.halfDayFirstHalf}
+                disabled={
+                  leaveType === LeaveType.halfDayFirstHalf ||
+                  leaveType === "compOffFirstHalf"
+                }
                 className="w-full rounded-[10px] px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30 ios-input-fill"
                 style={{
                   fontSize: 22,
                   fontWeight: 600,
                   fontFamily: '"Bricolage Grotesque", system-ui, sans-serif',
                   color:
-                    leaveType === LeaveType.halfDayFirstHalf
+                    leaveType === LeaveType.halfDayFirstHalf ||
+                    leaveType === "compOffFirstHalf"
                       ? "oklch(var(--primary))"
                       : "oklch(var(--foreground))",
                   border: "none",

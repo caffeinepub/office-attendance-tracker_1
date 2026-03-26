@@ -13,6 +13,7 @@ import {
 import { ChevronLeft, List, Plus, Search } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getCompOffDates, getCompOffSubType } from "../utils/compOffLeaves";
 
 interface AppleCalendarOverlayProps {
   selectedDate: Date;
@@ -69,6 +70,10 @@ function getDatesWithLeaves(): Map<string, string> {
       "fullDayLeave",
       "halfDayFirstHalf",
       "halfDaySecondHalf",
+      "compOff",
+      "compOffFull",
+      "compOffFirstHalf",
+      "compOffSecondHalf",
     ];
     if (Array.isArray(data)) {
       for (const entry of data) {
@@ -87,6 +92,18 @@ function getDatesWithLeaves(): Map<string, string> {
           result.set(key, entry.leaveType);
         }
       }
+    }
+    // Override with comp off dates stored in localStorage (may have sub-types)
+    const compOffDates = getCompOffDates();
+    for (const date of compOffDates) {
+      const sub = getCompOffSubType(date);
+      const leaveStr =
+        sub === "firstHalf"
+          ? "compOffFirstHalf"
+          : sub === "secondHalf"
+            ? "compOffSecondHalf"
+            : "compOffFull";
+      result.set(date, leaveStr);
     }
     return result;
   } catch {
@@ -150,6 +167,15 @@ function getBadge(
   }
   if (leave === "halfDaySecondHalf") {
     return { label: "2nd Half", bg: "rgba(0,122,255,0.15)", color: "#007AFF" };
+  }
+  if (leave === "compOff" || leave === "compOffFull") {
+    return { label: "Comp Off", bg: "rgba(52,199,89,0.15)", color: "#34C759" };
+  }
+  if (leave === "compOffFirstHalf") {
+    return { label: "CO 1st", bg: "rgba(52,199,89,0.15)", color: "#34C759" };
+  }
+  if (leave === "compOffSecondHalf") {
+    return { label: "CO 2nd", bg: "rgba(52,199,89,0.15)", color: "#34C759" };
   }
   return null;
 }
@@ -358,7 +384,10 @@ export default function AppleCalendarOverlay({
     const el = monthRefs.current[todayMonthKey];
     if (el && scrollRef.current) {
       const top = el.offsetTop - 96;
-      scrollRef.current.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      scrollRef.current.scrollTo({
+        top: Math.max(0, top),
+        behavior: "instant" as ScrollBehavior,
+      });
     }
   }, [visible, todayMonthKey]);
 

@@ -22,7 +22,11 @@ export type LeaveTypeStr =
   | "noLeave"
   | "halfDayFirstHalf"
   | "halfDaySecondHalf"
-  | "fullDayLeave";
+  | "fullDayLeave"
+  | "compOff"
+  | "compOffFull"
+  | "compOffFirstHalf"
+  | "compOffSecondHalf";
 
 export interface DayRecord {
   date: string;
@@ -78,14 +82,14 @@ export function applyLeaveTimeAdjustments(
   swipeOutMinutes: number,
   leaveType: LeaveTypeStr,
 ): { swipeIn: number; swipeOut: number } {
-  if (leaveType === "halfDayFirstHalf") {
+  if (leaveType === "halfDayFirstHalf" || leaveType === "compOffFirstHalf") {
     // If swipe-in is between 12:30 PM and 1:00 PM, auto-set to 1:00 PM
     if (swipeInMinutes >= HALF_PAST_12 && swipeInMinutes <= ONE_PM) {
       return { swipeIn: ONE_PM, swipeOut: swipeOutMinutes };
     }
   }
 
-  if (leaveType === "halfDaySecondHalf") {
+  if (leaveType === "halfDaySecondHalf" || leaveType === "compOffSecondHalf") {
     // If swipe-out is between 12:30 PM and 1:00 PM, auto-set to 12:30 PM
     if (swipeOutMinutes >= HALF_PAST_12 && swipeOutMinutes <= ONE_PM) {
       return { swipeIn: swipeInMinutes, swipeOut: HALF_PAST_12 };
@@ -126,7 +130,12 @@ export function applyLeaveTimeAdjustments(
  *     Example: swipeIn=07:00, swipeOut=16:00, no breakfast → 9h 00m − 30m = 8h 30m ✓
  */
 export function calculateDailyHours(record: DayRecord): number {
-  if (record.leaveType === "fullDayLeave") return 0;
+  if (
+    record.leaveType === "fullDayLeave" ||
+    record.leaveType === "compOff" ||
+    record.leaveType === "compOffFull"
+  )
+    return 0;
 
   if (!record.swipeIn || !record.swipeOut) return 0;
 
@@ -138,7 +147,10 @@ export function calculateDailyHours(record: DayRecord): number {
   // Effective working window is always 13:00 → clampedSwipeOut (max 19:00).
   // Actual swipe-in is completely ignored — start is always FIRST_HALF_END (13:00).
   // No breakfast bonus. No lunch deduction.
-  if (record.leaveType === "halfDayFirstHalf") {
+  if (
+    record.leaveType === "halfDayFirstHalf" ||
+    record.leaveType === "compOffFirstHalf"
+  ) {
     // Cap swipe-out at 19:00
     const effectiveOut = Math.min(swipeOutMins, WORK_WINDOW_END);
     // Net hours = swipeOut − 13:00 (clamped to 0 if swipeOut ≤ 13:00)
@@ -153,7 +165,10 @@ export function calculateDailyHours(record: DayRecord): number {
   // Primary block: clampedSwipeIn → 12:30
   // Extra block: if swipeOut > 13:00, add (clampedSwipeOut − 13:00)
   // Breakfast bonus applies. No lunch deduction.
-  if (record.leaveType === "halfDaySecondHalf") {
+  if (
+    record.leaveType === "halfDaySecondHalf" ||
+    record.leaveType === "compOffSecondHalf"
+  ) {
     const effectiveIn = clampToWorkingWindow(swipeInMins);
     // Primary block: from effectiveIn up to 12:30
     const primaryHours = Math.max(0, HALF_PAST_12 - effectiveIn);
@@ -200,9 +215,22 @@ export function calculateDailyHours(record: DayRecord): number {
 
 /** Check if core hours requirement is met */
 export function checkCoreHoursViolation(record: DayRecord): boolean {
-  if (record.leaveType === "fullDayLeave") return false;
-  if (record.leaveType === "halfDayFirstHalf") return false; // Half day first half - no core hours check
-  if (record.leaveType === "halfDaySecondHalf") return false; // Half day second half - no core hours check
+  if (
+    record.leaveType === "fullDayLeave" ||
+    record.leaveType === "compOff" ||
+    record.leaveType === "compOffFull"
+  )
+    return false;
+  if (
+    record.leaveType === "halfDayFirstHalf" ||
+    record.leaveType === "compOffFirstHalf"
+  )
+    return false;
+  if (
+    record.leaveType === "halfDaySecondHalf" ||
+    record.leaveType === "compOffSecondHalf"
+  )
+    return false;
   if (!record.swipeIn || !record.swipeOut) return false;
 
   const swipeInMins = parseTime(record.swipeIn);
@@ -216,10 +244,14 @@ export function checkCoreHoursViolation(record: DayRecord): boolean {
 export function getLeaveReduction(leaveType: LeaveTypeStr): number {
   switch (leaveType) {
     case "fullDayLeave":
+    case "compOff":
+    case "compOffFull":
       return FULL_DAY_LEAVE_REDUCTION;
     case "halfDayFirstHalf":
+    case "compOffFirstHalf":
       return HALF_DAY_FIRST_REDUCTION;
     case "halfDaySecondHalf":
+    case "compOffSecondHalf":
       return HALF_DAY_SECOND_REDUCTION;
     default:
       return 0;
@@ -324,7 +356,7 @@ export function calculateSwipeOutPrediction(
   // --- halfDayFirstHalf ---
   // Working window starts at 13:00 regardless of actual swipe-in.
   // No breakfast bonus. Predict: 13:00 + remaining, clamped to 19:00.
-  if (leaveType === "halfDayFirstHalf") {
+  if (leaveType === "halfDayFirstHalf" || leaveType === "compOffFirstHalf") {
     const predictedOut = FIRST_HALF_END + remaining;
     const clampedOut = Math.min(predictedOut, WORK_WINDOW_END);
     return {
@@ -338,7 +370,7 @@ export function calculateSwipeOutPrediction(
   // Primary block: clampedSwipeIn → 12:30 (+ breakfast bonus if applicable).
   // If remaining fits in primary block, predict swipe-out within morning.
   // If remaining exceeds primary block, extra hours needed after 13:00.
-  if (leaveType === "halfDaySecondHalf") {
+  if (leaveType === "halfDaySecondHalf" || leaveType === "compOffSecondHalf") {
     const effectiveIn = clampToWorkingWindow(swipeInMins);
     const primaryBlockMinutes = Math.max(0, HALF_PAST_12 - effectiveIn);
     const breakfastBonus = breakfastAtOffice ? BREAKFAST_BONUS : 0;
@@ -401,6 +433,13 @@ export function getLeaveTypeLabel(leaveType: LeaveTypeStr): string {
       return "Half-Day (Second Half)";
     case "fullDayLeave":
       return "Full-Day Leave";
+    case "compOff":
+    case "compOffFull":
+      return "Comp Off – Full Day";
+    case "compOffFirstHalf":
+      return "Comp Off – First Half";
+    case "compOffSecondHalf":
+      return "Comp Off – Second Half";
     default:
       return "No Leave";
   }
@@ -458,7 +497,11 @@ export function getDailyHoursIndicator(
   const hoursDisplay = formatHoursDisplay(dailyMinutes);
 
   // Full-day leave: neutral, no indicator
-  if (leaveType === "fullDayLeave") {
+  if (
+    leaveType === "fullDayLeave" ||
+    leaveType === "compOff" ||
+    leaveType === "compOffFull"
+  ) {
     return {
       color: "neutral",
       hoursDisplay: "0h 00m",
@@ -492,9 +535,12 @@ export function getDailyHoursIndicator(
   // (i.e. the leave reduction value, which equals the expected working hours for that half).
   // For regular days, the threshold is the full daily target.
   let threshold: number;
-  if (leaveType === "halfDayFirstHalf") {
+  if (leaveType === "halfDayFirstHalf" || leaveType === "compOffFirstHalf") {
     threshold = HALF_DAY_FIRST_REDUCTION; // 4h 30m = 270 min
-  } else if (leaveType === "halfDaySecondHalf") {
+  } else if (
+    leaveType === "halfDaySecondHalf" ||
+    leaveType === "compOffSecondHalf"
+  ) {
     threshold = HALF_DAY_SECOND_REDUCTION; // 4h 00m = 240 min
   } else {
     threshold = DAILY_TARGET_MINUTES; // 8h 30m = 510 min
