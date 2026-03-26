@@ -121,7 +121,7 @@ function calcAutoSwipeOut(
   if (!swipeInStr) return "";
   const swipeInMins = parseTime(swipeInStr);
   if (lt === LeaveType.noLeave || lt === "noLeave") {
-    const rawMinutes = 8 * 60 + 30 + 30 - (hasBreakfast ? 30 : 0);
+    const rawMinutes = 8 * 60 + 30 + 30 + (hasBreakfast ? 30 : 0);
     const predictedOut = swipeInMins + rawMinutes;
     return formatMinutes(Math.min(predictedOut, WORK_WINDOW_END_MINS));
   }
@@ -838,7 +838,7 @@ export default function DailyEntry() {
                       color: "oklch(var(--muted-foreground))",
                     }}
                   >
-                    +30 min added to hours
+                    +30 min added to swipe-out
                   </p>
                 </div>
               </div>
