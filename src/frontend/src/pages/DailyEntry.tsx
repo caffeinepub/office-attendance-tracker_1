@@ -1,5 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -22,6 +28,9 @@ import {
   Lock,
   Save,
   Star,
+  Sun,
+  Sunrise,
+  Target,
 } from "lucide-react";
 import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -60,6 +69,8 @@ import {
   isWeekendDate,
   parseTime,
 } from "../utils/hoursCalculation";
+
+type WeekendMode = "halfDay" | "fullDay" | "deficit";
 
 const LEAVE_OPTIONS: { value: string; label: string; group?: string }[] = [
   { value: LeaveType.noLeave, label: "No Leave" },
@@ -113,6 +124,9 @@ const ONE_PM_MINS = 13 * 60;
 const HALF_PAST_12_MINS = 12 * 60 + 30;
 const WORK_WINDOW_END_MINS = 19 * 60;
 
+const WEEKEND_HALF_DAY_MINS = 4 * 60 + 30; // 270
+const WEEKEND_FULL_DAY_MINS = 8 * 60 + 30; // 510
+
 function calcAutoSwipeOut(
   swipeInStr: string,
   lt: string,
@@ -131,6 +145,25 @@ function calcAutoSwipeOut(
   return "";
 }
 
+function calcWeekendSwipeOut(
+  swipeInStr: string,
+  mode: WeekendMode,
+  deficitMins: number,
+): string {
+  if (!swipeInStr) return "";
+  const swipeInMins = parseTime(swipeInStr);
+  let durationMins: number;
+  if (mode === "halfDay") {
+    durationMins = WEEKEND_HALF_DAY_MINS;
+  } else if (mode === "fullDay") {
+    durationMins = WEEKEND_FULL_DAY_MINS;
+  } else {
+    durationMins = Math.max(deficitMins, 30);
+  }
+  const predictedOut = swipeInMins + durationMins;
+  return formatMinutes(Math.min(predictedOut, WORK_WINDOW_END_MINS));
+}
+
 export default function DailyEntry() {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
@@ -141,6 +174,8 @@ export default function DailyEntry() {
   const [leaveType, setLeaveType] = useState<string>(LeaveType.noLeave);
   const [swipeOutManual, setSwipeOutManual] = useState(false);
   const [holidayWorking, setHolidayWorking] = useState(false);
+  const [weekendMode, setWeekendMode] = useState<WeekendMode | null>(null);
+  const [weekendModalOpen, setWeekendModalOpen] = useState(false);
 
   const dateKey = formatDateKey(selectedDate);
   const { data: existingRecord, isLoading: recordLoading } =
@@ -154,6 +189,12 @@ export default function DailyEntry() {
 
   const { data: allRecords = [] } = useGetAllRecords();
   const { balance: compOffBalance } = useCompOff(allRecords, holidays);
+
+  // Reset weekendMode when date changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run on dateKey change
+  useEffect(() => {
+    setWeekendMode(null);
+  }, [dateKey]);
 
   useEffect(() => {
     if (existingRecord) {
@@ -180,40 +221,6 @@ export default function DailyEntry() {
       setHolidayWorking(false);
     }
   }, [existingRecord, recordLoading]);
-
-  useEffect(() => {
-    if (swipeOutManual) return;
-    if (!swipeIn) return;
-    const auto = calcAutoSwipeOut(swipeIn, leaveType, breakfast);
-    if (auto) setSwipeOut(auto);
-  }, [swipeIn, leaveType, breakfast, swipeOutManual]);
-
-  useEffect(() => {
-    if (
-      leaveType === LeaveType.halfDayFirstHalf ||
-      leaveType === "compOffFirstHalf"
-    ) {
-      setSwipeIn("13:00");
-      setSwipeOutManual(false);
-    }
-  }, [leaveType]);
-
-  const handleSwipeOutChange = (val: string) => {
-    setSwipeOut(val);
-    setSwipeOutManual(true);
-  };
-  const handleSwipeInChange = (val: string) => {
-    setSwipeIn(val);
-    setSwipeOutManual(false);
-  };
-  const handleLeaveTypeChange = (v: string) => {
-    setLeaveType(v as LeaveType);
-    setSwipeOutManual(false);
-  };
-  const handleBreakfastChange = (val: boolean) => {
-    setBreakfast(val);
-    setSwipeOutManual(false);
-  };
 
   const weekRange = getWeekRange(selectedDate);
   const { data: weekRecords = [] } = useGetRecordsByDateRange(
@@ -258,6 +265,10 @@ export default function DailyEntry() {
       todayRecord,
     ]);
   }, [weekRecords, dateKey, leaveType, swipeIn, swipeOut, breakfast]);
+
+  const weeklyDeficitMins = useMemo(() => {
+    return Math.max(weeklyTarget - completedMinutesThisWeek, 0);
+  }, [weeklyTarget, completedMinutesThisWeek]);
 
   const remainingWorkdays = useMemo(() => {
     const dayOfWeek = selectedDate.getDay();
@@ -359,6 +370,94 @@ export default function DailyEntry() {
 
   const swipeFieldsDisabled = todayIsHoliday && !holidayWorking;
 
+  // Auto swipe-out calculation (non-weekend)
+  useEffect(() => {
+    if (swipeOutManual) return;
+    if (!swipeIn) return;
+    if (isWeekendDay && weekendMode) {
+      const auto = calcWeekendSwipeOut(swipeIn, weekendMode, weeklyDeficitMins);
+      if (auto) setSwipeOut(auto);
+      return;
+    }
+    if (!isWeekendDay) {
+      const auto = calcAutoSwipeOut(swipeIn, leaveType, breakfast);
+      if (auto) setSwipeOut(auto);
+    }
+  }, [
+    swipeIn,
+    leaveType,
+    breakfast,
+    swipeOutManual,
+    isWeekendDay,
+    weekendMode,
+    weeklyDeficitMins,
+  ]);
+
+  useEffect(() => {
+    if (
+      leaveType === LeaveType.halfDayFirstHalf ||
+      leaveType === "compOffFirstHalf"
+    ) {
+      setSwipeIn("13:00");
+      setSwipeOutManual(false);
+    }
+  }, [leaveType]);
+
+  const handleSwipeOutChange = (val: string) => {
+    setSwipeOut(val);
+    setSwipeOutManual(true);
+  };
+
+  const handleSwipeInFocus = () => {
+    // Show weekend modal if needed
+    if (isWeekendDay && !todayIsHoliday && weekendMode === null) {
+      setWeekendModalOpen(true);
+    }
+  };
+
+  const handleSwipeInChange = (val: string) => {
+    setSwipeIn(val);
+    setSwipeOutManual(false);
+  };
+  const handleLeaveTypeChange = (v: string) => {
+    setLeaveType(v as LeaveType);
+    setSwipeOutManual(false);
+  };
+  const handleBreakfastChange = (val: boolean) => {
+    setBreakfast(val);
+    setSwipeOutManual(false);
+  };
+
+  const handleSelectWeekendMode = (mode: WeekendMode) => {
+    setWeekendMode(mode);
+    setWeekendModalOpen(false);
+    // If swipe-in already entered, auto-fill swipe-out
+    if (swipeIn) {
+      const auto = calcWeekendSwipeOut(swipeIn, mode, weeklyDeficitMins);
+      if (auto) {
+        setSwipeOut(auto);
+        setSwipeOutManual(false);
+      }
+    }
+  };
+
+  const weekendModeBadgeLabel =
+    weekendMode === "halfDay"
+      ? "Half Day"
+      : weekendMode === "fullDay"
+        ? "Full Day"
+        : weekendMode === "deficit"
+          ? "Completing Deficit"
+          : null;
+
+  const formatMins = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
   const handleSave = async () => {
     // comp off types are frontend-only; map to backend leave types
     let backendLeaveType: LeaveType = leaveType as unknown as LeaveType;
@@ -428,6 +527,289 @@ export default function DailyEntry() {
           onClose={() => setCalendarOpen(false)}
         />
       )}
+
+      {/* Weekend Working Modal */}
+      <Dialog open={weekendModalOpen} onOpenChange={setWeekendModalOpen}>
+        <DialogContent
+          className="rounded-2xl mx-4 p-0 overflow-hidden"
+          style={{
+            maxWidth: 360,
+            backgroundColor: "oklch(var(--card))",
+            border: "1px solid oklch(var(--border) / 0.3)",
+          }}
+          data-ocid="weekend_mode.dialog"
+        >
+          <DialogHeader className="px-6 pt-6 pb-4">
+            <DialogTitle
+              style={{
+                fontSize: 20,
+                fontWeight: 700,
+                color: "oklch(var(--foreground))",
+                textAlign: "center",
+              }}
+            >
+              Working This Weekend?
+            </DialogTitle>
+
+            {/* Deficit display */}
+            <div
+              className="mt-3 rounded-xl px-4 py-3 text-center"
+              style={{
+                backgroundColor:
+                  weeklyDeficitMins <= 0
+                    ? "oklch(var(--success) / 0.10)"
+                    : "oklch(var(--primary) / 0.08)",
+              }}
+            >
+              {weeklyDeficitMins <= 0 ? (
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "oklch(var(--success))",
+                  }}
+                >
+                  Weekly target already met \ud83c\udf89 — any hours worked are
+                  bonus.
+                </p>
+              ) : (
+                <>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "oklch(var(--muted-foreground))",
+                      marginBottom: 2,
+                    }}
+                  >
+                    Weekly deficit
+                  </p>
+                  <p
+                    className="ios-number"
+                    style={{
+                      fontSize: 32,
+                      fontWeight: 700,
+                      color: "oklch(var(--primary))",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {formatMins(weeklyDeficitMins)}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "oklch(var(--muted-foreground))",
+                      marginTop: 2,
+                    }}
+                  >
+                    still needed this week
+                  </p>
+                </>
+              )}
+            </div>
+          </DialogHeader>
+
+          {/* Option cards */}
+          <div className="px-4 pb-5 space-y-2">
+            {/* Half Day */}
+            <button
+              type="button"
+              onClick={() => handleSelectWeekendMode("halfDay")}
+              className="w-full rounded-xl px-4 py-3.5 text-left transition-all active:scale-95"
+              style={{
+                border: "1px solid oklch(var(--border) / 0.5)",
+                backgroundColor: "oklch(var(--background))",
+              }}
+              data-ocid="weekend_mode.half_day.button"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center flex-shrink-0"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: "oklch(var(--warning) / 0.12)",
+                  }}
+                >
+                  <Sunrise
+                    style={{
+                      width: 18,
+                      height: 18,
+                      color: "oklch(var(--warning))",
+                    }}
+                  />
+                </div>
+                <div>
+                  <p
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "oklch(var(--foreground))",
+                    }}
+                  >
+                    Half Day
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "oklch(var(--muted-foreground))",
+                    }}
+                  >
+                    4h 30m toward your weekly total
+                  </p>
+                </div>
+                <ChevronRight
+                  style={{
+                    width: 16,
+                    height: 16,
+                    color: "oklch(var(--muted-foreground))",
+                    marginLeft: "auto",
+                    opacity: 0.5,
+                  }}
+                />
+              </div>
+            </button>
+
+            {/* Full Day */}
+            <button
+              type="button"
+              onClick={() => handleSelectWeekendMode("fullDay")}
+              className="w-full rounded-xl px-4 py-3.5 text-left transition-all active:scale-95"
+              style={{
+                border: "1px solid oklch(var(--border) / 0.5)",
+                backgroundColor: "oklch(var(--background))",
+              }}
+              data-ocid="weekend_mode.full_day.button"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center flex-shrink-0"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    backgroundColor: "oklch(var(--primary) / 0.12)",
+                  }}
+                >
+                  <Sun
+                    style={{
+                      width: 18,
+                      height: 18,
+                      color: "oklch(var(--primary))",
+                    }}
+                  />
+                </div>
+                <div>
+                  <p
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: "oklch(var(--foreground))",
+                    }}
+                  >
+                    Full Day
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "oklch(var(--muted-foreground))",
+                    }}
+                  >
+                    8h 30m toward your weekly total
+                  </p>
+                </div>
+                <ChevronRight
+                  style={{
+                    width: 16,
+                    height: 16,
+                    color: "oklch(var(--muted-foreground))",
+                    marginLeft: "auto",
+                    opacity: 0.5,
+                  }}
+                />
+              </div>
+            </button>
+
+            {/* Complete Deficit */}
+            {weeklyDeficitMins > 0 && (
+              <button
+                type="button"
+                onClick={() => handleSelectWeekendMode("deficit")}
+                className="w-full rounded-xl px-4 py-3.5 text-left transition-all active:scale-95"
+                style={{
+                  border: "1px solid oklch(var(--success) / 0.35)",
+                  backgroundColor: "oklch(var(--success) / 0.06)",
+                }}
+                data-ocid="weekend_mode.deficit.button"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      backgroundColor: "oklch(var(--success) / 0.14)",
+                    }}
+                  >
+                    <Target
+                      style={{
+                        width: 18,
+                        height: 18,
+                        color: "oklch(var(--success))",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 600,
+                        color: "oklch(var(--foreground))",
+                      }}
+                    >
+                      Complete Deficit
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "oklch(var(--success))",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {formatMins(weeklyDeficitMins)} — just enough to finish
+                      the week
+                    </p>
+                  </div>
+                  <ChevronRight
+                    style={{
+                      width: 16,
+                      height: 16,
+                      color: "oklch(var(--success))",
+                      marginLeft: "auto",
+                      opacity: 0.6,
+                    }}
+                  />
+                </div>
+              </button>
+            )}
+
+            {/* Skip */}
+            <button
+              type="button"
+              onClick={() => setWeekendModalOpen(false)}
+              className="w-full py-2 text-center"
+              style={{
+                fontSize: 15,
+                color: "oklch(var(--muted-foreground))",
+              }}
+              data-ocid="weekend_mode.cancel_button"
+            >
+              Maybe later
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* DATE Section */}
       <div>
@@ -621,7 +1003,24 @@ export default function DailyEntry() {
             pointerEvents: swipeFieldsDisabled ? "none" : "auto",
           }}
         >
-          <p className="ios-section-header">Swipe Times</p>
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <p className="ios-section-header mb-0">Swipe Times</p>
+            {isWeekendDay && weekendModeBadgeLabel && (
+              <span
+                className="px-3 py-1 rounded-full"
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  backgroundColor: "oklch(var(--primary) / 0.10)",
+                  color: "oklch(var(--primary))",
+                  border: "1px solid oklch(var(--primary) / 0.2)",
+                }}
+                data-ocid="weekend_mode.badge"
+              >
+                {weekendModeBadgeLabel}
+              </span>
+            )}
+          </div>
           <div className="ios-card overflow-hidden">
             {/* Swipe In row */}
             <div className="px-4 py-2">
@@ -659,6 +1058,7 @@ export default function DailyEntry() {
               <input
                 type="time"
                 value={swipeIn}
+                onFocus={handleSwipeInFocus}
                 onChange={(e) => handleSwipeInChange(e.target.value)}
                 disabled={
                   leaveType === LeaveType.halfDayFirstHalf ||

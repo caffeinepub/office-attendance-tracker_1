@@ -1,35 +1,35 @@
 # SwipeTrack Pro
 
 ## Current State
+Comp off half-day leave (first half and second half) follows the same weekly contribution logic as regular half-day leaves:
+- compOffFirstHalf → 4h 30m (HALF_DAY_FIRST_REDUCTION = 270 min)
+- compOffSecondHalf → 4h 00m (HALF_DAY_SECOND_REDUCTION = 240 min)
 
-The app has:
-- Leave types: Full Day, First Half, Second Half (half-day leave logic with frozen swipe-in at 13:00 for first-half, clamped swipe-out at 12:30 for second-half)
-- Comp Off balance tracked separately from earned holiday working hours (0.5 for 4h, 1.0 for 8h holiday work)
-- Comp Off available as a single option in the Leave tab (full-day only)
-- Comp Off balance displayed as amber badge beside the Leave selector
-- Comp Off entries expire 60 days after being earned
+Weekend working already has a popup and auto-fill, and earns comp off balance, but the earning logic for weekends specifically is tied to holiday earning (4h=0.5, 8h=1.0).
+
+When comp off is used as full-day leave, 8h 30m (FULL_DAY_LEAVE_REDUCTION = 510 min) is already deducted from weekly target — this is correct.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Comp Off sub-types in Leave tab: First Half Comp Off, Second Half Comp Off, Full Day Comp Off
-- When First Half Comp Off is selected: same logic as First Half Leave (swipe-in frozen at 13:00, counts as 4h 00m toward weekly target), deducts 0.5 from comp off balance
-- When Second Half Comp Off is selected: same logic as Second Half Leave (swipe-out clamped at 12:30, counts as 4h 30m toward weekly target), deducts 0.5 from comp off balance
-- When Full Day Comp Off is selected: same as Full Day Leave (entire day off, 8h 30m toward weekly target), deducts 1.0 from comp off balance
+- New constant `COMP_OFF_HALF_REDUCTION = 4 * 60 = 240` (4h flat) for comp off half-day leaves
+- Ensure weekend working (8h worked) earns 1 full day comp off via the useCompOff hook (same earning logic as holiday working: 4h=0.5, 8h=1.0)
 
 ### Modify
-- DailyEntry.tsx: Replace single "Comp Off" leave option with three sub-options (First Half, Second Half, Full Day)
-- hoursCalculation.ts: Treat comp off sub-types identically to their leave counterparts in all calculations
-- useCompOff.ts / compOffLeaves.ts: Deduct 0.5 for half-day comp off usage, 1.0 for full-day comp off usage from balance
+- `getLeaveWeeklyContribution` function in `hoursCalculation.ts`:
+  - `compOffFirstHalf` case → return 240 min (flat 4h) instead of 270 min
+  - `compOffSecondHalf` case → return 240 min (flat 4h) instead of 240 min (already 240, but ensure it stays at 240 not affected by other logic)
+- Color threshold for comp off half-day (both first and second) → 240 min (green if ≥ 4h, red if < 4h)
+- Any smart swipe-out prediction for compOffFirstHalf → use 240 min target
+- Any smart swipe-out prediction for compOffSecondHalf → use 240 min target
+- When full day comp off is used on a weekday (compOff or compOffFull leaveType), treat the day as non-working and deduct 8h 30m (510 min) from weekly target — this is already implemented, verify it is correct
+- Weekend working: after selecting a weekend session mode (Half Day, Full Day, or Complete Deficit), if user works ≥ 8h on that weekend day, automatically earn 1 full day comp off in the comp off balance (with 60-day expiry). If ≥ 4h worked but < 8h, earn 0.5 comp off. This mirrors the holiday working comp off earning logic.
 
 ### Remove
-- Single undifferentiated "Comp Off" leave type (replaced by the three sub-types)
+- Nothing to remove
 
 ## Implementation Plan
-
-1. Update leave type definitions to include `comp-off-first-half`, `comp-off-second-half`, `comp-off-full` (or similar)
-2. In DailyEntry.tsx leave selector, replace single Comp Off option with a group showing three sub-options
-3. In hoursCalculation.ts, map comp off sub-types to their leave equivalents for all calculations
-4. In useCompOff/compOffLeaves, deduct 0.5 for half-day and 1.0 for full-day when a comp off leave day is saved
-5. Ensure color thresholds apply correctly (same as leave counterparts)
-6. Ensure swipe-in freeze / swipe-out clamp logic applies to comp off first/second half same as regular leaves
+1. In `hoursCalculation.ts`: add `COMP_OFF_HALF_REDUCTION = 240` constant. Update `getLeaveWeeklyContribution` to return 240 for `compOffFirstHalf` and `compOffSecondHalf`. Update color threshold logic to use 240 for both comp off half-day types.
+2. In `hoursCalculation.ts`: verify smart swipe-out prediction for comp off half-day types uses the new 4h target.
+3. In `useCompOff.ts` and/or `DailyEntry.tsx`: after a weekend working day is saved with actual hours, apply the same comp off earning logic as holidays (4h=0.5, 8h=1.0 with 60-day expiry).
+4. Validate, typecheck, and build.

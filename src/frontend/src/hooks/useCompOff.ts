@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { AttendanceRecord } from "../backend";
 import { getTotalCompOffUsed } from "../utils/compOffLeaves";
-import { calculateDailyHours } from "../utils/hoursCalculation";
+import { calculateDailyHours, isWeekendDate } from "../utils/hoursCalculation";
 import type { Holiday } from "./useHolidays";
 
 export interface CompOffEntry {
@@ -9,6 +9,7 @@ export interface CompOffEntry {
   hoursWorked: number; // in minutes
   compOff: number; // 0, 0.5, or 1
   expiresOn: string; // YYYY-MM-DD
+  source: "holiday" | "weekend";
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -28,6 +29,12 @@ function todayStr(): string {
   return `${y}-${m}-${day}`;
 }
 
+function calcCompOff(hoursWorked: number): number {
+  if (hoursWorked >= 480) return 1;
+  if (hoursWorked >= 240) return 0.5;
+  return 0;
+}
+
 export function useCompOff(
   allRecords: AttendanceRecord[],
   holidays: Holiday[],
@@ -39,23 +46,61 @@ export function useCompOff(
 
   const entries = useMemo<CompOffEntry[]>(() => {
     const today = todayStr();
-    return allRecords
-      .filter((r) => r.holidayWorking === true && holidayDates.has(r.date))
-      .map((r) => {
+    const result: CompOffEntry[] = [];
+
+    for (const r of allRecords) {
+      // Holiday working: flagged explicitly
+      if (r.holidayWorking === true && holidayDates.has(r.date)) {
         const hoursWorked = calculateDailyHours({
           date: r.date,
           swipeIn: r.swipeIn,
           swipeOut: r.swipeOut,
           breakfastAtOffice: r.breakfastAtOffice,
-          leaveType: "noLeave", // holiday working = treat as a normal work session
+          leaveType: "noLeave",
         });
-        let compOff = 0;
-        if (hoursWorked >= 480) compOff = 1;
-        else if (hoursWorked >= 240) compOff = 0.5;
+        const compOff = calcCompOff(hoursWorked);
         const expiresOn = addDays(r.date, 60);
-        return { date: r.date, hoursWorked, compOff, expiresOn };
-      })
-      .filter((e) => e.expiresOn >= today);
+        if (expiresOn >= today && compOff > 0) {
+          result.push({
+            date: r.date,
+            hoursWorked,
+            compOff,
+            expiresOn,
+            source: "holiday",
+          });
+        }
+        continue; // skip weekend check for this date
+      }
+
+      // Weekend working: Sat/Sun, not a holiday, has actual swipe-in/out data
+      if (
+        isWeekendDate(r.date) &&
+        !holidayDates.has(r.date) &&
+        r.swipeIn &&
+        r.swipeOut
+      ) {
+        const hoursWorked = calculateDailyHours({
+          date: r.date,
+          swipeIn: r.swipeIn,
+          swipeOut: r.swipeOut,
+          breakfastAtOffice: r.breakfastAtOffice,
+          leaveType: "noLeave",
+        });
+        const compOff = calcCompOff(hoursWorked);
+        const expiresOn = addDays(r.date, 60);
+        if (expiresOn >= today && compOff > 0) {
+          result.push({
+            date: r.date,
+            hoursWorked,
+            compOff,
+            expiresOn,
+            source: "weekend",
+          });
+        }
+      }
+    }
+
+    return result;
   }, [allRecords, holidayDates]);
 
   const earnedBalance = useMemo(

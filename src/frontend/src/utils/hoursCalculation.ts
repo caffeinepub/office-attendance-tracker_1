@@ -10,6 +10,7 @@ export const LUNCH_DEDUCTION = 30; // 30 minutes – deducted on regular working
 export const FULL_DAY_LEAVE_REDUCTION = 8 * 60 + 30; // 8h 30m
 export const HALF_DAY_FIRST_REDUCTION = 4 * 60 + 30; // 4h 30m
 export const HALF_DAY_SECOND_REDUCTION = 4 * 60; // 4h 00m
+export const COMP_OFF_HALF_REDUCTION = 4 * 60; // 4h flat for comp off half-days
 export const DAILY_TARGET_MINUTES = 8 * 60 + 30; // 8h 30m – standard daily target
 
 const HALF_PAST_12 = 12 * 60 + 30; // 12:30 in minutes
@@ -205,11 +206,6 @@ export function calculateDailyHours(record: DayRecord): number {
   // Deduct 30 minutes for lunch break on regular working days only
   hours -= LUNCH_DEDUCTION;
 
-  // Add breakfast bonus if employee had breakfast at the office
-  if (record.breakfastAtOffice) {
-    hours += BREAKFAST_BONUS;
-  }
-
   return Math.max(0, hours);
 }
 
@@ -248,11 +244,12 @@ export function getLeaveReduction(leaveType: LeaveTypeStr): number {
     case "compOffFull":
       return FULL_DAY_LEAVE_REDUCTION;
     case "halfDayFirstHalf":
-    case "compOffFirstHalf":
       return HALF_DAY_FIRST_REDUCTION;
     case "halfDaySecondHalf":
-    case "compOffSecondHalf":
       return HALF_DAY_SECOND_REDUCTION;
+    case "compOffFirstHalf":
+    case "compOffSecondHalf":
+      return COMP_OFF_HALF_REDUCTION;
     default:
       return 0;
   }
@@ -535,13 +532,14 @@ export function getDailyHoursIndicator(
   // (i.e. the leave reduction value, which equals the expected working hours for that half).
   // For regular days, the threshold is the full daily target.
   let threshold: number;
-  if (leaveType === "halfDayFirstHalf" || leaveType === "compOffFirstHalf") {
+  if (leaveType === "halfDayFirstHalf") {
     threshold = HALF_DAY_FIRST_REDUCTION; // 4h 30m = 270 min
   } else if (
     leaveType === "halfDaySecondHalf" ||
+    leaveType === "compOffFirstHalf" ||
     leaveType === "compOffSecondHalf"
   ) {
-    threshold = HALF_DAY_SECOND_REDUCTION; // 4h 00m = 240 min
+    threshold = COMP_OFF_HALF_REDUCTION; // 4h flat = 240 min
   } else {
     threshold = DAILY_TARGET_MINUTES; // 8h 30m = 510 min
   }
