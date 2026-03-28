@@ -14,6 +14,7 @@ import {
   CalendarRange,
   Clock,
   Download,
+  Gift,
   LayoutDashboard,
   LogOut,
   Palette,
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { path: "/", label: "Today", icon: Clock },
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/leaves", label: "Leaves", icon: Calendar },
+  { path: "/comp-off", label: "Comp Off", icon: Gift },
   { path: "/holidays", label: "Holidays", icon: CalendarRange },
   { path: "/analytics", label: "Analytics", icon: BarChart2 },
   { path: "/export", label: "Export", icon: Download },
@@ -172,7 +174,7 @@ export default function Layout() {
                 onClick={() => navigate({ to: path })}
                 className="flex flex-col items-center gap-0.5 px-2 py-1"
                 style={{ minWidth: 44, minHeight: 44 }}
-                data-ocid={`nav.${label.toLowerCase()}.link`}
+                data-ocid={`nav.${label.toLowerCase().replace(" ", "-")}.link`}
               >
                 <Icon
                   className="mb-0.5"

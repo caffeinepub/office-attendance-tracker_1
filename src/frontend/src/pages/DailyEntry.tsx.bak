@@ -276,26 +276,24 @@ export default function DailyEntry() {
     return 7 - dayOfWeek; // Mon=6, Tue=5, Wed=4, Thu=3, Fri=2, Sat=1
   }, [selectedDate]);
 
-  const isWeekendDay = isWeekendDate(dateKey);
-  const isSimpleWorkMode =
-    (todayIsHoliday && holidayWorking) ||
-    (isWeekendDay && weekendMode !== null);
-
   const currentRecord = {
     date: dateKey,
     swipeIn,
     swipeOut,
-    breakfastAtOffice: isSimpleWorkMode ? false : breakfast,
+    breakfastAtOffice: breakfast,
     leaveType: leaveTypeToStr(leaveType),
   };
   const dailyHours = calculateDailyHours(currentRecord);
-  const coreViolation = isSimpleWorkMode
-    ? null
-    : checkCoreHoursViolation(currentRecord);
+  const coreViolation = checkCoreHoursViolation(currentRecord);
+  const isWeekendDay = isWeekendDate(dateKey);
   const isFullDayLeave =
     leaveType === LeaveType.fullDayLeave ||
     leaveType === LeaveType.compOff ||
     leaveType === "compOffFull";
+
+  const isSimpleWorkMode =
+    (todayIsHoliday && holidayWorking) ||
+    (isWeekendDay && weekendMode !== null);
 
   const simpleWorkHours = useMemo(() => {
     if (!isSimpleWorkMode || !swipeIn || !swipeOut) return null;

@@ -10,6 +10,7 @@ import Layout from "./components/Layout";
 import ProfileSetup from "./components/ProfileSetup";
 import { useNotificationReminders } from "./hooks/useNotificationReminders";
 import Analytics from "./pages/Analytics";
+import CompOffBalance from "./pages/CompOffBalance";
 import DailyEntry from "./pages/DailyEntry";
 import Dashboard from "./pages/Dashboard";
 import Export from "./pages/Export";
@@ -39,6 +40,12 @@ const leavesRoute = createRoute({
   component: Leaves,
 });
 
+const compOffRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/comp-off",
+  component: CompOffBalance,
+});
+
 const holidaysRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/holidays",
@@ -61,6 +68,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   dashboardRoute,
   leavesRoute,
+  compOffRoute,
   holidaysRoute,
   analyticsRoute,
   exportRoute,

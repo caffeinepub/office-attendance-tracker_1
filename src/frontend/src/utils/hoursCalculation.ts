@@ -35,6 +35,7 @@ export interface DayRecord {
   swipeOut: string;
   breakfastAtOffice: boolean;
   leaveType: LeaveTypeStr;
+  holidayWorking?: boolean;
 }
 
 /** Parse "HH:MM" to total minutes from midnight */
@@ -128,6 +129,7 @@ export function applyLeaveTimeAdjustments(
  *
  * - noLeave (regular working day):
  *     net = (clampedOut − clampedIn) − LUNCH_DEDUCTION (30 min) + BREAKFAST_BONUS (30 min, if applicable)
+ *     Exception: no lunch deduction on holiday/weekend working days.
  *     Example: swipeIn=07:00, swipeOut=16:00, no breakfast → 9h 00m − 30m = 8h 30m ✓
  */
 export function calculateDailyHours(record: DayRecord): number {
@@ -203,8 +205,11 @@ export function calculateDailyHours(record: DayRecord): number {
 
   let hours = Math.max(0, effectiveOut - effectiveIn);
 
-  // Deduct 30 minutes for lunch break on regular working days only
-  hours -= LUNCH_DEDUCTION;
+  // Skip lunch deduction on holiday/weekend working days
+  const isWeekendWorking = isWeekendDate(record.date);
+  if (!record.holidayWorking && !isWeekendWorking) {
+    hours -= LUNCH_DEDUCTION;
+  }
 
   return Math.max(0, hours);
 }
