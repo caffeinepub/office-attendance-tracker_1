@@ -1242,7 +1242,7 @@ export default function DailyEntry() {
             />
 
             {/* Breakfast toggle row */}
-            {!isSimpleWorkMode && (
+            {!isWeekendDay && !todayIsHoliday && (
               <div
                 className="ios-row justify-between"
                 data-ocid="breakfast.toggle"
@@ -1328,7 +1328,7 @@ export default function DailyEntry() {
               </div>
             </div>
 
-            {!isSimpleWorkMode && coreViolation && (
+            {!isWeekendDay && !todayIsHoliday && coreViolation && (
               <>
                 <div
                   style={{
