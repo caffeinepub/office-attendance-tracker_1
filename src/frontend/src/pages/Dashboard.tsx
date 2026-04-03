@@ -85,6 +85,7 @@ export default function Dashboard() {
     );
     const remaining = Math.max(0, target - completed);
     const deficit = completed < target ? target - completed : 0;
+    const surplus = completed > target ? completed - target : 0;
     const progress = target > 0 ? Math.min(100, (completed / target) * 100) : 0;
     const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
     const workdaysPassed = Math.min(dayOfWeek, 5);
@@ -98,6 +99,7 @@ export default function Dashboard() {
       completed,
       remaining,
       deficit,
+      surplus,
       progress,
       onTrack,
       weekendHours,
@@ -593,7 +595,7 @@ export default function Dashboard() {
                         color: "oklch(var(--muted-foreground))",
                       }}
                     >
-                      Deficit
+                      Deficit/Surplus
                     </span>
                     <span
                       className="ios-number"
@@ -602,12 +604,16 @@ export default function Dashboard() {
                         color:
                           weekData.deficit > 0
                             ? "oklch(var(--destructive))"
-                            : "oklch(var(--muted-foreground))",
+                            : weekData.surplus > 0
+                              ? "oklch(0.55 0.18 145)"
+                              : "oklch(var(--muted-foreground))",
                       }}
                     >
                       {weekData.deficit > 0
                         ? formatHoursDisplay(weekData.deficit)
-                        : "\u2014"}
+                        : weekData.surplus > 0
+                          ? `+${formatHoursDisplay(weekData.surplus)}`
+                          : "\u2014"}
                     </span>
                   </div>
                 </div>
